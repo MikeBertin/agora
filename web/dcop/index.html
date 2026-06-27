@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agora — Distributed Optimisation</title>
+<meta name="description" content="Distributed constraint optimisation by graph colouring: autonomous agents resolve resource conflicts with only local information, via DSA and MGM. Runs the real Python engine via Pyodide.">
+<style>
+  :root{
+    --bg:#0a0a0f; --panel:#13131c; --line:#23232f; --line2:#2c2c3a;
+    --ink:#e7e7ef; --muted:#8a8a9c; --accent:#c79bff;
+    --dsa:#ffc266; --mgm:#7cc4ff; --bad:#ff6b6b; --good:#9af0c8;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:radial-gradient(1100px 700px at 50% -10%,#16161f,#0a0a0f 60%);
+    color:var(--ink);min-height:100vh;
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  .page{max-width:1120px;margin:0 auto;padding:36px 24px 56px}
+  a.back{color:var(--muted);text-decoration:none;font-size:13px;font-family:var(--mono)}
+  a.back:hover{color:var(--ink)}
+  .hero{margin:12px 0 20px}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.4px}
+  .sub{color:var(--muted);font-size:14px;line-height:1.6;max-width:780px;margin:0}
+  .sub b{color:var(--ink);font-weight:600}
+
+  .controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin-bottom:18px}
+  .ctl{display:flex;flex-direction:column;gap:5px}
+  .ctl label{font-family:var(--mono);font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted)}
+  select,button{font:inherit;font-size:13.5px;color:var(--ink);background:#1a1a25;
+    border:1px solid var(--line2);border-radius:8px;padding:7px 10px}
+  select{min-width:180px}
+  button{cursor:pointer} button:hover{border-color:#3a3a4d}
+  button.primary{background:linear-gradient(180deg,#1e3a52,#16293a);border-color:#2c4d68;color:#cfe9ff}
+  button:disabled{opacity:.5;cursor:default}
+  .mode{display:flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+  .mode button{border:0;border-radius:0;background:#15151e}
+  .mode button.on{background:#26314a;color:#cfe9ff}
+
+  .cols{display:flex;gap:18px;align-items:flex-start}
+  @media(max-width:900px){.cols{flex-direction:column}}
+  .col-left{flex:1 1 560px;min-width:0;display:flex;flex-direction:column;gap:14px}
+  .col-right{flex:0 0 372px;display:flex;flex-direction:column;gap:14px}
+  @media(max-width:900px){.col-right{flex:1 1 auto;width:100%}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 14px 12px}
+  .panel h3{margin:0 0 2px;font-size:14.5px}
+  .panel .psub{margin:0 0 10px;color:var(--muted);font-size:12px;line-height:1.45}
+  canvas{width:100%;display:block;border-radius:6px}
+  .legend{display:flex;flex-wrap:wrap;gap:13px;margin-top:8px;font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  .transport{display:flex;align-items:center;gap:13px}
+  .transport input[type=range]{flex:1;accent-color:var(--accent)}
+  .tlabel{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:160px;text-align:right}
+  .tlabel b{color:var(--ink)}
+
+  .notice{margin-top:30px;border-top:1px solid var(--line);padding-top:22px}
+  .notice-title{font-size:12px;text-transform:uppercase;letter-spacing:1.6px;color:var(--muted);margin:0 0 14px;font-weight:600}
+  .notice-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:900px){.notice-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.notice-grid{grid-template-columns:1fr}}
+  .ncard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+  .ncard h3{margin:0 0 7px;font-size:14px;font-weight:600}
+  .ncard p{margin:0 0 11px;color:var(--muted);font-size:12.5px;line-height:1.5}
+
+  .x{color:var(--accent);border-bottom:1px dotted currentColor;cursor:help;white-space:nowrap}
+  .x::after{content:'ⓘ';font-size:.7em;vertical-align:.35em;margin-left:1px;opacity:.7}
+  .x:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+  .x.why{white-space:normal;font-size:12.5px;font-weight:600}
+  #pop{position:fixed;z-index:60;max-width:310px;background:#15151f;border:1px solid #2e2e3e;
+    border-radius:12px;padding:13px 15px;box-shadow:0 22px 55px -16px #000,0 0 0 1px #000;
+    font-size:13px;line-height:1.55;visibility:hidden;opacity:0;transform:translateY(4px);
+    pointer-events:none;transition:opacity .13s,transform .13s}
+  #pop.show{visibility:visible;opacity:1;transform:none;pointer-events:auto}
+  #pop h4{margin:0 0 7px;font-size:13.5px;color:var(--accent)}
+  #pop p{margin:0 0 8px}#pop p:last-child{margin:0}
+  #pop b{color:var(--ink);font-weight:600}
+  #pop .muted{color:var(--muted);font-size:12px}
+  #pop .eq{font-family:var(--mono);background:#0e0e16;border:1px solid var(--line);border-radius:7px;
+    padding:8px 10px;margin:9px 0;font-size:12.5px;text-align:center;color:#e6ebff}
+</style>
+</head>
+<body>
+<div class="page">
+  <a class="back" href="../">&larr; Agora</a>
+  <header class="hero">
+    <h1>Distributed Optimisation</h1>
+    <p class="sub">Each node is an autonomous agent picking one of <i>k</i> colours — read: a time slot,
+    frequency or channel. Neighbours sharing a colour <b>clash</b> over the resource. No agent sees the
+    whole network; each knows only its own choice and its neighbours'. Yet through purely
+    <span class="x" data-pop="local">local moves</span> they drive the global conflict count down — the
+    backbone of decentralised <span class="x" data-pop="allocation">scheduling and allocation</span>.
+    This is a <span class="x" data-pop="dcop">DCOP</span>. <b>Live</b> runs the real Python engine via
+    Pyodide.</p>
+  </header>
+
+  <div class="controls">
+    <div class="ctl"><label for="instance">Network</label><select id="instance"></select></div>
+    <div class="ctl"><label>Algorithm</label>
+      <div class="mode"><button id="algoDsa" class="on" data-algo="dsa">DSA</button><button id="algoMgm" data-algo="mgm">MGM</button></div>
+    </div>
+    <div class="ctl"><label>Mode</label>
+      <div class="mode"><button id="modePlay" class="on">Playback</button><button id="modeLive">Live · Python</button></div>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="col-left">
+      <div class="panel">
+        <h3>The constraint network</h3>
+        <p class="psub">Nodes are agents coloured by their current choice; a
+        <b style="color:var(--bad)">red edge</b> is an unresolved conflict. Watch agents flip colours
+        round by round until the clashes clear (or settle into a stubborn few).</p>
+        <canvas id="graphCanvas" height="430"></canvas>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--bad)"></i>conflict</span>
+          <span><i class="sw" style="background:#3a3a48"></i>satisfied</span>
+          <span><i class="sw" style="border:2px solid #fff;background:transparent"></i>just moved</span>
+        </div>
+      </div>
+      <div class="transport">
+        <button id="playBtn">▶ Play</button>
+        <input id="scrub" type="range" min="0" max="0" value="0">
+        <div class="tlabel" id="tlabel">round 0 · <b>0</b> conflicts</div>
+      </div>
+    </div>
+
+    <div class="col-right">
+      <div class="panel">
+        <h3>Convergence</h3>
+        <p class="psub">Total conflicts per round. <span class="x" data-pop="dsa">DSA</span> drops fast
+        but can wobble; <span class="x" data-pop="mgm">MGM</span> only ever improves — but may
+        <span class="x" data-pop="localopt">stall</span> above zero.</p>
+        <canvas id="convCanvas" height="220"></canvas>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--dsa)"></i>DSA</span>
+          <span><i class="sw" style="background:var(--mgm)"></i>MGM</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Live exploration</h3>
+        <p class="psub">Switch Mode to <b>Live · Python</b>, then change the resources or the move
+        probability and re-solve. Too few colours and the conflicts can't all clear.</p>
+        <div id="liveCtls" style="opacity:.5">
+          <div class="ctl" style="margin-bottom:10px"><label>Colours k · <span id="kVal">4</span></label><input id="kSlider" type="range" min="2" max="6" value="4" disabled style="width:100%;accent-color:var(--accent)"></div>
+          <div class="ctl"><label>DSA move prob. p · <span id="pVal">0.70</span></label><input id="pSlider" type="range" min="0" max="1" step="0.05" value="0.7" disabled style="width:100%;accent-color:var(--accent)"></div>
+        </div>
+        <button id="runLive" class="primary" style="display:none;margin-top:12px;width:100%">Run live ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="notice">
+    <h2 class="notice-title">Things to notice</h2>
+    <div class="notice-grid">
+      <div class="ncard">
+        <h3>Local moves, global goal</h3>
+        <p>No agent ever sees the whole network or counts the global conflicts — each just reacts to its
+        neighbours. The global objective falls anyway, purely from local self-interest.</p>
+        <span class="x why" data-pop="local">How that works</span>
+      </div>
+      <div class="ncard">
+        <h3>Randomness as a tool</h3>
+        <p>In DSA, if every conflicting agent moved at once they'd chase each other forever. The move
+        probability p breaks that symmetry — turn it up in Live and watch it thrash.</p>
+        <span class="x why" data-pop="dsa">DSA's coin flip</span>
+      </div>
+      <div class="ncard">
+        <h3>MGM never backslides</h3>
+        <p>Letting only the biggest-gain agent in each neighbourhood move guarantees conflicts never
+        rise — but the dense network shows it can get stuck a notch above zero.</p>
+        <span class="x why" data-pop="localopt">Local optima</span>
+      </div>
+      <div class="ncard">
+        <h3>Too few resources</h3>
+        <p>Drop the colour count below what the network needs (Live) and no assignment can satisfy
+        everyone — the agents fight forever over a genuinely scarce resource.</p>
+        <span class="x why" data-pop="allocation">Scarcity &amp; allocation</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="pop" role="tooltip"></div>
+
+<script>
+const C=k=>getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+const CCOLORS=['#7cc4ff','#ff8f6b','#5fd0c5','#ffc266','#b9a3ff','#ff7eb6'];
+let dataset=null, inst=null, algo='dsa', frames=[], idx=0, playing=false, mode='play';
+let pyodide=null, pyReady=false;
+const $=id=>document.getElementById(id);
+
+async function loadData(){
+  dataset=await (await fetch('../data/dcop.json')).json();
+  const sel=$('instance'); sel.innerHTML='';
+  dataset.instances.forEach((s,i)=>sel.add(new Option(s.label,i)));
+  sel.value=1; selectInstance(1);
+}
+function selectInstance(i){
+  inst=dataset.instances[i];
+  $('kSlider').value=inst.params.k; $('kVal').textContent=inst.params.k;
+  $('pSlider').value=inst.params.p; $('pVal').textContent=inst.params.p.toFixed(2);
+  useRuns();
+}
+function useRuns(){ frames=inst.runs[algo]; idx=0; $('scrub').max=frames.length-1; $('scrub').value=0; seek(0); drawConv(); }
+
+function seek(i){
+  idx=Math.max(0,Math.min(i,frames.length-1));
+  $('scrub').value=idx;
+  const f=frames[idx];
+  $('tlabel').innerHTML=`round ${idx} · <b>${f.conflicts}</b> conflict${f.conflicts===1?'':'s'}`;
+  drawGraph(); drawConv();
+}
+let raf=null;
+function tick(){ if(!playing) return;
+  seek(idx+1);
+  if(idx>=frames.length-1){ playing=false; $('playBtn').textContent='▶ Play'; return; }
+  setTimeout(()=>{ raf=requestAnimationFrame(tick); }, 220);
+}
+function togglePlay(){ if(!frames.length) return;
+  if(idx>=frames.length-1) seek(0);
+  playing=!playing; $('playBtn').textContent=playing?'❚❚ Pause':'▶ Play';
+  if(playing) raf=requestAnimationFrame(tick);
+}
+
+function fit(cv){const dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=parseInt(cv.getAttribute('height'));
+  cv.width=w*dpr;cv.height=h*dpr;const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return{ctx,w,h};}
+
+function drawGraph(){
+  const {ctx,w,h}=fit($('graphCanvas'));
+  ctx.clearRect(0,0,w,h);
+  const g=inst.graph, f=frames[idx], a=f.assignment, pad=34, nr=15;
+  const X=x=>pad+(w-2*pad)*x, Y=y=>pad+(h-2*pad)*y;
+  // edges
+  for(const [i,j] of g.edges){
+    const conflict=a[i]===a[j];
+    ctx.strokeStyle=conflict?C('--bad'):'#33333f';
+    ctx.lineWidth=conflict?2.6:1.2;
+    ctx.beginPath();ctx.moveTo(X(g.nodes[i].x),Y(g.nodes[i].y));ctx.lineTo(X(g.nodes[j].x),Y(g.nodes[j].y));ctx.stroke();
+  }
+  // nodes
+  const changed=new Set(f.changed);
+  for(const nd of g.nodes){
+    const x=X(nd.x), y=Y(nd.y);
+    if(changed.has(nd.id)){ ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(x,y,nr+4,0,7);ctx.stroke(); }
+    ctx.fillStyle=CCOLORS[a[nd.id]%CCOLORS.length];
+    ctx.beginPath();ctx.arc(x,y,nr,0,7);ctx.fill();
+    ctx.strokeStyle='#0a0a0f';ctx.lineWidth=1.5;ctx.stroke();
+  }
+}
+
+function drawConv(){
+  const {ctx,w,h}=fit($('convCanvas'));
+  ctx.clearRect(0,0,w,h);
+  const conv=inst.convergence, n=conv.dsa.length;
+  const maxc=Math.max(1,...conv.dsa,...conv.mgm);
+  const pad={l:30,r:12,t:14,b:24};
+  const X=i=>pad.l+(w-pad.l-pad.r)*(i/(n-1)), Y=v=>h-pad.b-(h-pad.t-pad.b)*v/maxc;
+  ctx.strokeStyle=C('--line');ctx.strokeRect(pad.l,pad.t,w-pad.l-pad.r,h-pad.t-pad.b);
+  ctx.fillStyle=C('--muted');ctx.font='10px '+C('--mono');
+  ctx.fillText(maxc,6,Y(maxc)+3);ctx.fillText('0',6,Y(0)+3);
+  ctx.fillText('round →',w/2-18,h-7);
+  const line=(arr,col,active)=>{ ctx.strokeStyle=col;ctx.lineWidth=active?2.2:1.3;ctx.globalAlpha=active?1:0.5;
+    ctx.beginPath();arr.forEach((v,i)=>{const x=X(i),y=Y(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();ctx.globalAlpha=1; };
+  line(conv.dsa,C('--dsa'),algo==='dsa'); line(conv.mgm,C('--mgm'),algo==='mgm');
+  // current round marker
+  ctx.strokeStyle='rgba(255,255,255,0.35)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(X(idx),pad.t);ctx.lineTo(X(idx),h-pad.b);ctx.stroke();ctx.setLineDash([]);
+}
+
+function setAlgo(a){ algo=a;
+  $('algoDsa').classList.toggle('on',a==='dsa'); $('algoMgm').classList.toggle('on',a==='mgm');
+  playing=false;$('playBtn').textContent='▶ Play'; useRuns();
+}
+
+// ---- live (Pyodide) ----
+const CORE_FILES=['__init__.py','domain.py','model.py','agents.py','analysis.py','protocol.py','domains.py','auctions.py','voting.py','voting_scenarios.py','dcop.py'];
+async function ensurePyodide(){
+  if(pyReady) return;
+  if(!window.loadPyodide){ await new Promise((res,rej)=>{const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);}); }
+  pyodide=await loadPyodide();
+  await pyodide.runPythonAsync(`import os\nos.makedirs('core',exist_ok=True)`);
+  for(const f of CORE_FILES){ const txt=await (await fetch('../core/'+f)).text(); pyodide.FS.writeFile('core/'+f,txt); }
+  pyReady=true;
+}
+async function runLive(){
+  const btn=$('runLive');
+  try{
+    btn.disabled=true; if(!pyReady) btn.textContent='Loading Python…';
+    await ensurePyodide(); btn.textContent='Run live ▶';
+    const k=+$('kSlider').value, p=+$('pSlider').value, pr=inst.params;
+    const js=await pyodide.runPythonAsync(`
+import json
+from core.dcop import make_graph, dsa, mgm
+g=make_graph(${pr.n}, ${pr.radius}, ${pr.gseed})
+fd=dsa(g,${k},${p},${pr.rounds},${pr.seed}); fm=mgm(g,${k},${pr.rounds},${pr.seed})
+json.dumps({"id":"live","label":"Live","params":{"n":${pr.n},"radius":${pr.radius},"gseed":${pr.gseed},"k":${k},"p":${p},"rounds":${pr.rounds},"seed":${pr.seed}},
+  "graph":g,"runs":{"dsa":fd,"mgm":fm},
+  "convergence":{"dsa":[f["conflicts"] for f in fd],"mgm":[f["conflicts"] for f in fm]}})
+`);
+    inst=JSON.parse(js); useRuns();
+  }catch(e){ console.error(e); }
+  finally{ btn.disabled=false; }
+}
+
+$('instance').onchange=e=>{ if(mode!=='play') setMode('play'); selectInstance(+e.target.value); };
+$('algoDsa').onclick=()=>setAlgo('dsa'); $('algoMgm').onclick=()=>setAlgo('mgm');
+$('playBtn').onclick=togglePlay;
+$('scrub').oninput=e=>{ playing=false;$('playBtn').textContent='▶ Play'; seek(+e.target.value); };
+$('kSlider').oninput=e=>$('kVal').textContent=e.target.value;
+$('pSlider').oninput=e=>$('pVal').textContent=(+e.target.value).toFixed(2);
+$('runLive').onclick=runLive;
+$('modePlay').onclick=()=>setMode('play'); $('modeLive').onclick=()=>setMode('live');
+window.addEventListener('resize',()=>{ if(inst){ drawGraph(); drawConv(); } });
+function setMode(m){
+  mode=m;
+  $('modePlay').classList.toggle('on',m==='play'); $('modeLive').classList.toggle('on',m==='live');
+  ['kSlider','pSlider'].forEach(id=>$(id).disabled=m!=='live');
+  $('liveCtls').style.opacity=m==='live'?'1':'0.5';
+  $('runLive').style.display=m==='live'?'block':'none';
+  if(m==='play') selectInstance(+$('instance').value);
+}
+loadData();
+
+// ---- popovers ----
+const POP={
+  dcop:{title:'Distributed constraint optimisation',html:`
+    <p>A DCOP splits one optimisation problem across many <b>autonomous agents</b>. Each controls a
+    variable; pairwise <b>constraints</b> assign a cost to combinations. Agents exchange only local
+    messages, with no central solver, and aim to minimise the total cost.</p>
+    <p class="muted">Graph colouring is the canonical case: variable = colour, constraint = "differ
+    from my neighbour", cost = 1 per clash.</p>`},
+  allocation:{title:'Scheduling & allocation',html:`
+    <p>Colouring <i>is</i> resource allocation in disguise. Map colours to <b>time slots</b> and you
+    have meeting scheduling; to <b>frequencies</b>, channel assignment; to <b>machines</b>, job
+    scheduling. An edge means "these two can't share".</p>
+    <p class="muted">Doing it with local agents — rather than one central optimiser — is what makes it
+    robust and scalable, the foundation a distributed supply/resource engine builds on.</p>`},
+  local:{title:'Local moves, global goal',html:`
+    <p>Each agent only ever counts conflicts with its <b>immediate neighbours</b> and picks the colour
+    that minimises them. Summed across the network, those selfish local improvements pull the
+    <b>global</b> conflict total down.</p>
+    <p class="muted">It isn't guaranteed to reach zero — local search can get stuck — but it needs no
+    global view, no coordinator, and scales to huge networks.</p>`},
+  dsa:{title:'DSA — distributed stochastic algorithm',html:`
+    <p>Every round, each agent finds the colour that cuts its conflicts most and, if that's an
+    improvement, switches to it <b>with probability p</b>.</p>
+    <div class="eq">move if gain &gt; 0 and rand() &lt; p</div>
+    <p class="muted">The coin flip matters: if two clashing neighbours both moved every time, they'd
+    swap colours forever. p&nbsp;≈&nbsp;0.7 works well; p&nbsp;=&nbsp;1 thrashes.</p>`},
+  mgm:{title:'MGM — maximum gain messaging',html:`
+    <p>Each agent computes its best possible improvement (its <b>gain</b>) and shares it. An agent only
+    moves if its gain is the <b>largest among its neighbours</b>.</p>
+    <p class="muted">Because no two neighbours move at once, the global cost can never rise — MGM is
+    <b>monotonic</b>. The price is that it can freeze in a local optimum that DSA's randomness would
+    have escaped.</p>`},
+  localopt:{title:'Local optima',html:`
+    <p>A state where <b>no single agent</b> can improve by moving alone, yet conflicts remain. Escaping
+    needs two agents to move together — which MGM forbids and DSA only manages by luck.</p>
+    <p class="muted">The dense network settles here a notch above zero. More colours, or a dash of
+    randomness, is what breaks out.</p>`},
+};
+(function(){
+  const pop=$('pop'); let pinned=null;
+  function show(el){ const d=POP[el.dataset.pop]; if(!d) return;
+    pop.innerHTML='<h4>'+d.title+'</h4>'+d.html; pop.classList.add('show');
+    const r=el.getBoundingClientRect(),p=pop.getBoundingClientRect(),m=10;
+    let left=Math.max(m,Math.min(r.left+r.width/2-p.width/2,innerWidth-p.width-m));
+    let top=r.top-p.height-10; if(top<m) top=r.bottom+10;
+    pop.style.left=left+'px';pop.style.top=top+'px'; }
+  function hide(){ pop.classList.remove('show'); }
+  document.querySelectorAll('.x').forEach(el=>{
+    el.tabIndex=0; el.setAttribute('role','button');
+    el.addEventListener('mouseenter',()=>{ if(!pinned) show(el); });
+    el.addEventListener('mouseleave',()=>{ if(!pinned) hide(); });
+    el.addEventListener('focus',()=>{ if(!pinned) show(el); });
+    el.addEventListener('blur',()=>{ if(!pinned) hide(); });
+    el.addEventListener('click',e=>{ e.stopPropagation(); if(pinned===el){pinned=null;hide();}else{pinned=el;show(el);} });
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();} });
+  });
+  pop.addEventListener('click',e=>e.stopPropagation());
+  document.addEventListener('click',()=>{ if(pinned){pinned=null;hide();} });
+  addEventListener('keydown',e=>{ if(e.key==='Escape'&&pinned){pinned=null;hide();} });
+  addEventListener('scroll',()=>{ if(pinned) show(pinned); },true);
+})();
+</script>
+</body>
+</html>

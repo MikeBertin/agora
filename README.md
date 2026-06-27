@@ -23,9 +23,9 @@ package (`core/`). The same code runs two ways:
 | | | |
 |---|---|---|
 | **[Negotiation](web/negotiation/)** | Bilateral bargaining | A candidate and an employer haggle over a five-issue job offer under a deadline. Watch the bidding dance against the exact Pareto frontier, the concession curves, and a frequency model learning the opponent's hidden priorities. **Built.** |
-| **Auctions** | Mechanism design | English / Dutch / Vickrey / double auctions; price discovery and revenue equivalence. *Planned.* |
-| **Voting** | Social choice | Plurality, Borda, instant-runoff and the Condorcet cycle. *Planned.* |
-| **Distributed optimisation** | DCOP | Independent agents coordinating under constraints — the backbone of resource allocation and scheduling. *Planned.* |
+| **[Auctions](web/auctions/)** | Mechanism design | English / Vickrey / first-price / Dutch auctions under independent private values; bid shading, the revenue-equivalence theorem converging live, and the same-mean/different-variance revenue distribution. **Built.** |
+| **[Voting](web/voting/)** | Social choice | Plurality, Borda, instant-runoff and Condorcet over curated profiles (spoiler, the Condorcet paradox, and a profile where all four rules disagree), with a live majority graph. **Built.** |
+| **[Distributed optimisation](web/dcop/)** | DCOP | Graph colouring as decentralised resource allocation: autonomous agents resolve conflicts with only local information via DSA and MGM. **Built.** |
 
 ## The negotiation agents
 
@@ -57,19 +57,24 @@ core/                 # reusable pure-Python engine (no dependencies)
   protocol.py         #   SAOP alternating-offers session runner -> trace
   analysis.py         #   exact Pareto frontier + Nash point (enumerated)
   domains.py          #   the Job Offer domain + candidate/employer profiles
-experiments/run.py    # generates the JSON traces + mirrors core/ into web/
+  auctions.py         #   English/Vickrey/first-price/Dutch + revenue equivalence
+  voting.py           #   plurality / Borda / IRV / Condorcet + pairwise margins
+  voting_scenarios.py #   curated profiles (spoiler, paradox, all-differ)
+  dcop.py             #   graph colouring via DSA and MGM
+experiments/          # one runner per demo; each writes web/data/*.json
+  run.py  run_auctions.py  run_voting.py  run_dcop.py   # + mirror core/ into web/
 web/                  # static site (GitHub Pages)
   index.html          #   landing
-  negotiation/        #   the demo (Canvas viz + Pyodide live mode)
-  data/               #   precomputed traces + manifest
+  negotiation/ auctions/ voting/ dcop/   # the demos (Canvas viz + Pyodide live)
+  data/               #   precomputed traces + manifests
   core/               #   copy of the engine, fetched by Pyodide
-tests/test_core.py    # engine smoke tests
+tests/test_core.py    # engine smoke tests (37 checks)
 ```
 
-The Python core is deliberately dependency-free and small enough that the whole
-outcome space is enumerable, so the Pareto frontier and Nash point are computed
-**exactly**, not approximated. The `auctions` and `dcop` modules planned next
-are intended to be lifted into a resource-allocation / supply-optimisation
+The Python core is deliberately dependency-free and small enough that exact
+results are computed, not approximated (the negotiation outcome space and the
+auction equilibria are enumerated/closed-form). The `auctions` and `dcop`
+modules are intended to be lifted into a resource-allocation / supply-optimisation
 engine — multi-agent mechanism design is the foundation that work builds on.
 
 ## Running it

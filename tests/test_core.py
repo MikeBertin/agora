@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.analysis import analyse, pareto_frontier, outcome_space
 from core.auctions import run_auctions, run_round, first_price_bid
+from core.dcop import make_graph, dsa, mgm, count_conflicts
 from core.domains import JOB_OFFER, CANDIDATE, EMPLOYER, PROFILES
 from core.model import FrequencyModel
 from core.protocol import run_session
@@ -116,9 +117,33 @@ def test_voting():
           all(pw[a][b] == -pw[b][a] for a in pw for b in pw))
 
 
+def test_dcop():
+    g = make_graph(14, 0.40, 3)
+    check("graph is deterministic", make_graph(14, 0.40, 3) == g)
+    check("graph has nodes and edges", len(g["nodes"]) == 14 and len(g["edges"]) > 0)
+    # with enough colours, both algorithms clear all conflicts on this instance
+    fd = dsa(g, 4, 0.7, 60, 1)
+    fm = mgm(g, 4, 60, 1)
+    check("dsa reduces conflicts", fd[-1]["conflicts"] <= fd[0]["conflicts"])
+    check("dsa reaches zero (k=4)", fd[-1]["conflicts"] == 0)
+    check("mgm reaches zero (k=4)", fm[-1]["conflicts"] == 0)
+    # MGM is monotonic: conflicts never increase round to round
+    mono = all(fm[i + 1]["conflicts"] <= fm[i]["conflicts"] for i in range(len(fm) - 1))
+    check("mgm is monotonic", mono)
+    # too few colours -> cannot reach zero on a dense graph
+    dense = make_graph(16, 0.38, 7)
+    check("k=2 leaves conflicts on a dense graph",
+          dsa(dense, 2, 0.7, 60, 1)[-1]["conflicts"] > 0)
+    # count_conflicts agrees with the recorded frame
+    last = fd[-1]
+    check("count_conflicts matches frame",
+          count_conflicts(last["assignment"], g["edges"]) == last["conflicts"])
+
+
 if __name__ == "__main__":
     for fn in [test_domain_and_utility, test_frequency_model,
-               test_pareto_and_nash, test_sessions, test_auctions, test_voting]:
+               test_pareto_and_nash, test_sessions, test_auctions, test_voting,
+               test_dcop]:
         print(fn.__name__)
         fn()
     print("\nAll engine smoke tests passed.")
