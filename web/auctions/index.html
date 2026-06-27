@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agora — Auctions</title>
+<meta name="description" content="Four classic auctions — English, Dutch, first-price and Vickrey — under independent private values: bid shading, who wins, and the revenue-equivalence theorem, all converging live. Runs the real Python engine via Pyodide.">
+<style>
+  :root{
+    --bg:#0a0a0f; --panel:#13131c; --line:#23232f; --line2:#2c2c3a;
+    --ink:#e7e7ef; --muted:#8a8a9c; --accent:#b9a3ff;
+    --english:#7cc4ff; --vickrey:#5fd0c5; --first:#ffc266; --dutch:#ff8f6b;
+    --win:#9af0c8;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:radial-gradient(1100px 700px at 50% -10%,#16161f,#0a0a0f 60%);
+    color:var(--ink);min-height:100vh;
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  .page{max-width:1120px;margin:0 auto;padding:36px 24px 56px}
+  a.back{color:var(--muted);text-decoration:none;font-size:13px;font-family:var(--mono)}
+  a.back:hover{color:var(--ink)}
+  .hero{margin:12px 0 20px}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.4px}
+  .sub{color:var(--muted);font-size:14px;line-height:1.6;max-width:760px;margin:0}
+  .sub b{color:var(--ink);font-weight:600}
+
+  .controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 18px}
+  .ctl{display:flex;flex-direction:column;gap:5px}
+  .ctl label{font-family:var(--mono);font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted)}
+  select,button{font:inherit;font-size:13.5px;color:var(--ink);background:#1a1a25;
+    border:1px solid var(--line2);border-radius:8px;padding:7px 10px}
+  button{cursor:pointer} button:hover{border-color:#3a3a4d}
+  button.primary{background:linear-gradient(180deg,#1e3a52,#16293a);border-color:#2c4d68;color:#cfe9ff}
+  button:disabled{opacity:.5;cursor:default}
+  .spacer{flex:1}
+  .mode{display:flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+  .mode button{border:0;border-radius:0;background:#15151e}
+  .mode button.on{background:#26314a;color:#cfe9ff}
+
+  .transport{display:flex;align-items:center;gap:13px}
+  .transport input[type=range]{flex:1;accent-color:var(--english)}
+  .tlabel{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:120px}
+  #status{font-family:var(--mono);font-size:12px;color:var(--muted)}
+
+  .cols{display:flex;gap:18px;align-items:flex-start}
+  @media(max-width:900px){.cols{flex-direction:column}}
+  .col-left{flex:1 1 560px;min-width:0;display:flex;flex-direction:column;gap:14px}
+  .col-right{flex:0 0 372px;display:flex;flex-direction:column;gap:14px}
+  @media(max-width:900px){.col-right{flex:1 1 auto;width:100%}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 14px 10px}
+  .panel h3{margin:0 0 2px;font-size:14.5px}
+  .panel .psub{margin:0 0 10px;color:var(--muted);font-size:12px;line-height:1.45}
+  canvas{width:100%;display:block;border-radius:6px}
+  .legend{display:flex;flex-wrap:wrap;gap:13px;margin-top:8px;font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  .notice{margin-top:30px;border-top:1px solid var(--line);padding-top:22px}
+  .notice-title{font-size:12px;text-transform:uppercase;letter-spacing:1.6px;color:var(--muted);margin:0 0 14px;font-weight:600}
+  .notice-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:900px){.notice-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.notice-grid{grid-template-columns:1fr}}
+  .ncard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+  .ncard h3{margin:0 0 7px;font-size:14px;font-weight:600}
+  .ncard p{margin:0 0 11px;color:var(--muted);font-size:12.5px;line-height:1.5}
+
+  .x{color:var(--accent);border-bottom:1px dotted currentColor;cursor:help;white-space:nowrap}
+  .x::after{content:'ⓘ';font-size:.7em;vertical-align:.35em;margin-left:1px;opacity:.7}
+  .x:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+  .x.why{white-space:normal;font-size:12.5px;font-weight:600}
+  #pop{position:fixed;z-index:60;max-width:310px;background:#15151f;border:1px solid #2e2e3e;
+    border-radius:12px;padding:13px 15px;box-shadow:0 22px 55px -16px #000,0 0 0 1px #000;
+    font-size:13px;line-height:1.55;visibility:hidden;opacity:0;transform:translateY(4px);
+    pointer-events:none;transition:opacity .13s,transform .13s}
+  #pop.show{visibility:visible;opacity:1;transform:none;pointer-events:auto}
+  #pop h4{margin:0 0 7px;font-size:13.5px;color:var(--accent)}
+  #pop p{margin:0 0 8px}#pop p:last-child{margin:0}
+  #pop b{color:var(--ink);font-weight:600}
+  #pop .muted{color:var(--muted);font-size:12px}
+  #pop .eq{font-family:var(--mono);background:#0e0e16;border:1px solid var(--line);border-radius:7px;
+    padding:8px 10px;margin:9px 0;font-size:12.5px;text-align:center;color:#e6ebff}
+</style>
+</head>
+<body>
+<div class="page">
+  <a class="back" href="../">&larr; Agora</a>
+  <header class="hero">
+    <h1>Auctions</h1>
+    <p class="sub">Several bidders, each with a secret <span class="x" data-pop="ipv">private value</span>
+    for one item, compete under four classic rules. The mechanics differ wildly — yet for values drawn
+    at random, all four raise the <b>same expected revenue</b>. Scrub through the auctions and watch the
+    <span class="x" data-pop="revequiv">revenue-equivalence theorem</span> emerge.
+    <b>Live</b> runs the real Python engine in your browser via Pyodide.</p>
+  </header>
+
+  <div class="cols">
+    <div class="col-left">
+      <div class="panel">
+        <h3>Revenue equivalence</h3>
+        <p class="psub">Running-average price paid, per mechanism, as auctions accumulate. The
+        <span class="x" data-pop="second">second-price</span> pair and the
+        <span class="x" data-pop="shade">first-price</span> pair take different paths but converge to
+        the same line — the dashed theoretical value (n−1)/(n+1).</p>
+        <canvas id="revCanvas" height="360"></canvas>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--english)"></i>English</span>
+          <span><i class="sw" style="background:var(--vickrey)"></i>Vickrey</span>
+          <span><i class="sw" style="background:var(--first)"></i>First-price</span>
+          <span><i class="sw" style="background:var(--dutch)"></i>Dutch</span>
+          <span><i class="sw" style="background:#fff;opacity:.5"></i>Theoretical</span>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="ctl"><label>Mode</label>
+          <div class="mode"><button id="modePlay" class="on">Playback</button><button id="modeLive">Live · Python</button></div>
+        </div>
+        <div class="ctl" id="liveCtls" style="display:none">
+          <label for="nb">Bidders · <span id="nbVal">5</span></label>
+          <input id="nb" type="range" min="2" max="10" step="1" value="5" style="width:150px;accent-color:var(--english)">
+        </div>
+        <div class="spacer"></div>
+        <div class="ctl"><label>&nbsp;</label><button id="runLive" class="primary" style="display:none">Run live ▶</button></div>
+      </div>
+      <div class="transport">
+        <button id="playBtn">▶ Play</button>
+        <input id="scrub" type="range" min="0" max="0" value="0">
+        <div class="tlabel" id="tlabel">auction 1</div>
+        <span id="status"></span>
+      </div>
+    </div>
+
+    <div class="col-right">
+      <div class="panel">
+        <h3>This auction</h3>
+        <p class="psub">Each bar is one bidder's true value; the
+        <span class="x" data-pop="efficiency">winner</span> is gold. The two lines show what the winner
+        actually pays: the 2nd-highest value, vs the shaded first-price bid.</p>
+        <canvas id="aucCanvas" height="216"></canvas>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--win)"></i>Winner</span>
+          <span><i class="sw" style="background:var(--vickrey)"></i>2nd-price</span>
+          <span><i class="sw" style="background:var(--first)"></i>1st-price (shaded)</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Revenue distribution</h3>
+        <p class="psub">How the winning price is spread, pooled over the auctions so far. Both pairs
+        share the same <b>mean</b> (dashed) — but first-price is
+        <span class="x" data-pop="spread">tighter</span>: same revenue on average, less risk for the seller.</p>
+        <canvas id="distCanvas" height="216"></canvas>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--vickrey)"></i>2nd-price (English/Vickrey)</span>
+          <span><i class="sw" style="background:var(--first)"></i>1st-price (Dutch/sealed)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="notice">
+    <h2 class="notice-title">Things to notice</h2>
+    <div class="notice-grid">
+      <div class="ncard">
+        <h3>Honesty is optimal</h3>
+        <p>In <b>English</b> and <b>Vickrey</b>, bidding your exact value is a dominant strategy — you
+        can't do better whatever the others do. The winner pays the runner-up's value.</p>
+        <span class="x why" data-pop="dominant">Why truth-telling wins</span>
+      </div>
+      <div class="ncard">
+        <h3>Shade your bid</h3>
+        <p>In <b>first-price</b> and <b>Dutch</b>, bidding your value would earn you zero. The
+        equilibrium shades down to v·(n−1)/n — bidding less, but winning the same auctions.</p>
+        <span class="x why" data-pop="shade">The equilibrium bid</span>
+      </div>
+      <div class="ncard">
+        <h3>Same revenue, every time</h3>
+        <p>Four very different rules, one expected revenue. The running averages chase the same dashed
+        line — that's the revenue-equivalence theorem in action.</p>
+        <span class="x why" data-pop="revequiv">Why they coincide</span>
+      </div>
+      <div class="ncard">
+        <h3>Competition pays</h3>
+        <p>Switch to <b>Live</b> and raise the bidder count: revenue climbs toward the top value and
+        shading shrinks (b → v) — more rivals means less room to lowball.</p>
+        <span class="x why" data-pop="competition">The effect of n</span>
+      </div>
+    </div>
+  </section>
+
+  <p class="sub" style="margin-top:26px;border-top:1px solid var(--line);padding-top:16px">
+    Independent private values drawn uniformly on [0,1]. <b>English ≡ Vickrey</b> (pay the 2nd-highest
+    value) and <b>Dutch ≡ first-price</b> (pay the shaded top bid) are strategically equivalent pairs —
+    which is why each pair's line sits exactly on top of the other.</p>
+</div>
+
+<div id="pop" role="tooltip"></div>
+
+<script>
+const C = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+const COL = {english:C('--english'),vickrey:C('--vickrey'),first:C('--first'),dutch:C('--dutch'),
+             win:C('--win'),muted:C('--muted'),line:C('--line2')};
+const MECHS=['english','vickrey','first-price','dutch'];
+const MCOL={'english':COL.english,'vickrey':COL.vickrey,'first-price':COL.first,'dutch':COL.dutch};
+
+let data=null, cumAvg=null, idx=0, playing=false, mode='play';
+let pyodide=null, pyReady=false;
+const $=id=>document.getElementById(id);
+
+async function loadPlayback(){
+  setStatus('loading…');
+  data=await (await fetch('../data/auctions.json')).json();
+  onDataLoaded(); setStatus('');
+}
+function onDataLoaded(){
+  const n=data.rounds.length;
+  cumAvg={}; for(const m of MECHS) cumAvg[m]=new Array(n);
+  const run={}; for(const m of MECHS) run[m]=0;
+  data.rounds.forEach((r,i)=>{ for(const m of MECHS){ run[m]+=r.prices[m]; cumAvg[m][i]=run[m]/(i+1); } });
+  idx=0; $('scrub').max=n-1; $('scrub').value=0;
+  seek(0);
+}
+function seek(i){
+  idx=Math.max(0,Math.min(i,data.rounds.length-1));
+  $('scrub').value=idx;
+  $('tlabel').textContent=`auction ${idx+1} / ${data.rounds.length}`;
+  draw();
+}
+let raf=null;
+function tick(){
+  if(!playing) return;
+  const step=Math.max(1,Math.round(data.rounds.length/400));
+  seek(idx+step);
+  if(idx>=data.rounds.length-1){ playing=false; $('playBtn').textContent='▶ Play'; return; }
+  raf=requestAnimationFrame(tick);
+}
+function togglePlay(){
+  if(!data) return;
+  if(idx>=data.rounds.length-1) seek(0);
+  playing=!playing; $('playBtn').textContent=playing?'❚❚ Pause':'▶ Play';
+  if(playing) raf=requestAnimationFrame(tick);
+}
+
+function fit(cv){const dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=parseInt(cv.getAttribute('height'));
+  cv.width=w*dpr;cv.height=h*dpr;const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return{ctx,w,h};}
+function hexA(hex,a){const n=hex.replace('#','');return `rgba(${parseInt(n.slice(0,2),16)},${parseInt(n.slice(2,4),16)},${parseInt(n.slice(4,6),16)},${a})`;}
+function draw(){ if(!data) return; drawRevenue(); drawAuction(); drawDistribution(); }
+
+function drawRevenue(){
+  const {ctx,w,h}=fit($('revCanvas'));
+  const pad={l:46,r:14,t:14,b:34}, n=data.rounds.length;
+  const X=i=>pad.l+(w-pad.l-pad.r)*(i/(n-1)), Y=v=>h-pad.b-(h-pad.t-pad.b)*v;
+  ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle=C('--line');ctx.lineWidth=1;ctx.strokeRect(pad.l,pad.t,w-pad.l-pad.r,h-pad.t-pad.b);
+  ctx.fillStyle=COL.muted;ctx.font='10px '+C('--mono');
+  for(let g=0;g<=1.0001;g+=0.25){ ctx.strokeStyle='#1c1c27';
+    ctx.beginPath();ctx.moveTo(pad.l,Y(g));ctx.lineTo(w-pad.r,Y(g));ctx.stroke();
+    ctx.fillText(g.toFixed(2),6,Y(g)+3); }
+  ctx.fillText('auction →',w/2-20,h-6);
+  // theoretical line
+  const th=data.summary.theoreticalRevenue;
+  ctx.strokeStyle='rgba(255,255,255,0.45)';ctx.setLineDash([5,4]);ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.moveTo(pad.l,Y(th));ctx.lineTo(w-pad.r,Y(th));ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='rgba(255,255,255,0.6)';ctx.fillText('(n−1)/(n+1) = '+th.toFixed(3),w-pad.r-150,Y(th)-5);
+  // running-average lines (skip first few noisy points for legibility)
+  const start=Math.min(3,idx);
+  for(const m of MECHS){
+    ctx.strokeStyle=MCOL[m];ctx.lineWidth=1.6;ctx.globalAlpha=(m==='vickrey'||m==='dutch')?0.75:1;
+    ctx.beginPath();
+    for(let i=start;i<=idx;i++){ const x=X(i),y=Y(cumAvg[m][i]); i===start?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+    ctx.stroke();ctx.globalAlpha=1;
+  }
+}
+
+function drawAuction(){
+  const {ctx,w,h}=fit($('aucCanvas'));
+  const r=data.rounds[idx], vals=r.values, n=vals.length;
+  const pad={l:34,r:12,t:12,b:22};
+  const Y=v=>h-pad.b-(h-pad.t-pad.b)*v, plotW=w-pad.l-pad.r, gw=plotW/n;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle=COL.muted;ctx.font='10px '+C('--mono');
+  for(let g=0;g<=1.0001;g+=0.5){ ctx.strokeStyle='#1c1c27';
+    ctx.beginPath();ctx.moveTo(pad.l,Y(g));ctx.lineTo(w-pad.r,Y(g));ctx.stroke();
+    ctx.fillText(g.toFixed(1),6,Y(g)+3); }
+  // value bars
+  vals.forEach((v,i)=>{
+    const x=pad.l+gw*i+gw*0.22, bw=gw*0.56, win=(i===r.winner);
+    ctx.fillStyle=win?COL.win:'rgba(150,160,185,0.55)';
+    ctx.fillRect(x,Y(v),bw,(h-pad.b)-Y(v));
+    if(win){ // shaded bid marker on the winner's bar
+      ctx.fillStyle=COL.first;ctx.fillRect(x,Y(r.bidsFP[i])-1.5,bw,3);
+    }
+  });
+  // price lines
+  const p2=r.prices['english'], p1=r.prices['first-price'];
+  const line=(y,col,lbl)=>{ ctx.strokeStyle=col;ctx.lineWidth=1.3;ctx.setLineDash([4,3]);
+    ctx.beginPath();ctx.moveTo(pad.l,Y(y));ctx.lineTo(w-pad.r,Y(y));ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=col;ctx.fillText(lbl,w-pad.r-66,Y(y)-3); };
+  line(p2,COL.vickrey,'2nd-price '+p2.toFixed(2));
+  line(p1,COL.first,'1st-price '+p1.toFixed(2));
+}
+
+function drawDistribution(){
+  const {ctx,w,h}=fit($('distCanvas'));
+  const pad={l:16,r:12,t:26,b:24}, BINS=24;
+  const X=v=>pad.l+(w-pad.l-pad.r)*v;            // price 0..1
+  ctx.clearRect(0,0,w,h);
+  // pool prices over the auctions seen so far (two distinct series)
+  const sp=[], fp=[];
+  for(let i=0;i<=idx;i++){ sp.push(data.rounds[i].prices['english']); fp.push(data.rounds[i].prices['first-price']); }
+  const hist=arr=>{ const c=new Array(BINS).fill(0);
+    for(const v of arr){ c[Math.min(BINS-1,Math.max(0,Math.floor(v*BINS)))]++; } return c; };
+  const hsp=hist(sp), hfp=hist(fp), maxc=Math.max(1,...hsp,...hfp);
+  const Yc=c=>h-pad.b-(h-pad.t-pad.b)*c/maxc;
+  // axis
+  ctx.fillStyle=COL.muted;ctx.font='10px '+C('--mono');
+  ctx.fillText('0',pad.l-3,h-pad.b+14);ctx.fillText('0.5',X(0.5)-7,h-pad.b+14);ctx.fillText('1',X(1)-4,h-pad.b+14);
+  ctx.fillText('price paid →',w/2-26,h-6);
+  // filled histograms (wider one behind)
+  const fill=(hc,col,a)=>{ ctx.fillStyle=hexA(col,a);
+    for(let b=0;b<BINS;b++){ const x0=X(b/BINS),x1=X((b+1)/BINS),y=Yc(hc[b]); ctx.fillRect(x0,y,x1-x0,(h-pad.b)-y); } };
+  const outline=(hc,col)=>{ ctx.strokeStyle=col;ctx.lineWidth=1.3;ctx.beginPath();
+    for(let b=0;b<BINS;b++){ const x0=X(b/BINS),x1=X((b+1)/BINS),y=Yc(hc[b]);
+      b===0?ctx.moveTo(x0,y):ctx.lineTo(x0,y); ctx.lineTo(x1,y); } ctx.stroke(); };
+  fill(hsp,COL.vickrey,0.30); fill(hfp,COL.first,0.40);
+  outline(hsp,COL.vickrey); outline(hfp,COL.first);
+  // shared mean (theoretical) vertical line
+  const th=data.summary.theoreticalRevenue;
+  ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.setLineDash([5,4]);ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.moveTo(X(th),pad.t-6);ctx.lineTo(X(th),h-pad.b);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='rgba(255,255,255,0.6)';ctx.fillText('mean '+th.toFixed(2),X(th)+4,pad.t+2);
+  // spread readout
+  const mean=a=>a.reduce((s,v)=>s+v,0)/a.length;
+  const std=a=>{const m=mean(a);return Math.sqrt(a.reduce((s,v)=>s+(v-m)*(v-m),0)/a.length);};
+  ctx.font='10px '+C('--mono');
+  ctx.fillStyle=COL.vickrey;ctx.fillText('σ='+std(sp).toFixed(3),pad.l,14);
+  ctx.fillStyle=COL.first;ctx.fillText('σ='+std(fp).toFixed(3),pad.l+78,14);
+}
+
+function setStatus(t){$('status').textContent=t;}
+
+const CORE_FILES=['__init__.py','domain.py','model.py','agents.py','analysis.py','protocol.py','domains.py','auctions.py'];
+async function ensurePyodide(){
+  if(pyReady) return;
+  setStatus('loading Python…');
+  if(!window.loadPyodide){ await new Promise((res,rej)=>{const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);}); }
+  pyodide=await loadPyodide();
+  await pyodide.runPythonAsync(`import os\nos.makedirs('core',exist_ok=True)`);
+  for(const f of CORE_FILES){ const txt=await (await fetch('../core/'+f)).text(); pyodide.FS.writeFile('core/'+f,txt); }
+  pyReady=true; setStatus('Python ready');
+}
+async function runLive(){
+  try{
+    $('runLive').disabled=true; await ensurePyodide();
+    const nb=parseInt($('nb').value); setStatus('running…');
+    const js=await pyodide.runPythonAsync(`
+import json
+from core.auctions import run_auctions
+json.dumps(run_auctions(${nb},800,42))
+`);
+    data=JSON.parse(js); onDataLoaded(); setStatus('live ✓ ('+nb+' bidders)');
+  }catch(e){ setStatus('error: '+e.message); console.error(e); }
+  finally{ $('runLive').disabled=false; }
+}
+
+$('playBtn').onclick=togglePlay;
+$('scrub').oninput=e=>{ playing=false;$('playBtn').textContent='▶ Play'; seek(+e.target.value); };
+$('nb').oninput=e=>$('nbVal').textContent=e.target.value;
+$('runLive').onclick=runLive;
+$('modePlay').onclick=()=>setMode('play');
+$('modeLive').onclick=()=>setMode('live');
+window.addEventListener('resize',()=>{ if(data) draw(); });
+function setMode(m){
+  mode=m;
+  $('modePlay').classList.toggle('on',m==='play'); $('modeLive').classList.toggle('on',m==='live');
+  $('liveCtls').style.display=m==='live'?'flex':'none'; $('runLive').style.display=m==='live'?'inline-block':'none';
+  if(m==='play') loadPlayback(); else setStatus('press “Run live” to run the Python engine in-browser');
+}
+loadPlayback();
+
+// ---- popovers ----
+const POP={
+  ipv:{title:'Independent private values',html:`
+    <p>Each bidder has their own secret worth for the item — drawn at random, here uniformly on
+    <b>[0, 1]</b>, and independent of everyone else's. Nobody knows the others' values.</p>
+    <p class="muted">This is the standard setting in which the equivalence results below hold.</p>`},
+  second:{title:'Second-price logic (English & Vickrey)',html:`
+    <p>The winner pays the <b>second-highest value</b>, not their own. In the <b>English</b> clock the
+    price stops rising the instant the runner-up drops out; the <b>Vickrey</b> sealed auction charges
+    the same by rule. They're strategically identical.</p>`},
+  shade:{title:'First-price logic (sealed & Dutch)',html:`
+    <p>You pay <b>what you bid</b>, so bidding your full value leaves you no profit. The symmetric
+    equilibrium bids below value:</p>
+    <div class="eq">b(v) = v · (n−1)/n</div>
+    <p class="muted">The <b>Dutch</b> descending clock is the same game in disguise — you "accept" exactly
+    at your planned bid — so it pays the same shaded top bid.</p>`},
+  revequiv:{title:'The revenue-equivalence theorem',html:`
+    <p>Any auction that (1) always awards the item to the <b>highest-value</b> bidder and (2) gives a
+    bidder with value 0 zero expected payoff raises the <b>same expected revenue</b>.</p>
+    <div class="eq">E[revenue] = (n−1)/(n+1)</div>
+    <p class="muted">Second-price collects the runner-up's value; first-price collects a shaded top
+    bid. Per auction they differ — but average them and they meet. (Vickrey, 1961.)</p>`},
+  efficiency:{title:'Efficiency',html:`
+    <p>An auction is <b>efficient</b> if the item ends up with whoever values it most. All four here
+    are: truthful bidding and monotonic shading both leave the highest-value bidder winning.</p>
+    <p class="muted">Efficiency is about <i>who</i> wins; revenue is about <i>how much</i> the seller
+    collects. Equivalence is a statement about the second.</p>`},
+  dominant:{title:'Why truth-telling is dominant',html:`
+    <p>In a second-price auction, your bid only decides <b>whether</b> you win, never <b>how much</b>
+    you pay (that's set by the runner-up). Over-bidding risks winning at a loss; under-bidding risks
+    skipping a profitable win. Bidding your value is best <b>whatever others do</b>.</p>`},
+  spread:{title:'Same mean, different spread',html:`
+    <p>Revenue equivalence is about the <b>average</b> — it says nothing about the variance. The
+    <b>first-price</b> price (a shaded function of the single top value) is far less volatile than the
+    <b>second-price</b> price (the gap down to the runner-up's value).</p>
+    <p class="muted">So a <b>risk-averse seller</b> rationally prefers first-price / Dutch: the same
+    expected take, but a tighter, more predictable outcome. Same mean (dashed), narrower curve.</p>`},
+  competition:{title:'The effect of more bidders',html:`
+    <p>As n grows, the shading factor (n−1)/n → 1, so first-price bids creep up toward true value, and
+    the expected revenue (n−1)/(n+1) → 1.</p>
+    <p class="muted">More competition squeezes out bidder surplus and hands it to the seller — the
+    intuition behind wanting a "thick" market.</p>`},
+};
+(function(){
+  const pop=$('pop'); let pinned=null;
+  function show(el){ const d=POP[el.dataset.pop]; if(!d) return;
+    pop.innerHTML='<h4>'+d.title+'</h4>'+d.html; pop.classList.add('show');
+    const r=el.getBoundingClientRect(),p=pop.getBoundingClientRect(),m=10;
+    let left=Math.max(m,Math.min(r.left+r.width/2-p.width/2,innerWidth-p.width-m));
+    let top=r.top-p.height-10; if(top<m) top=r.bottom+10;
+    pop.style.left=left+'px';pop.style.top=top+'px'; }
+  function hide(){ pop.classList.remove('show'); }
+  document.querySelectorAll('.x').forEach(el=>{
+    el.tabIndex=0; el.setAttribute('role','button');
+    el.addEventListener('mouseenter',()=>{ if(!pinned) show(el); });
+    el.addEventListener('mouseleave',()=>{ if(!pinned) hide(); });
+    el.addEventListener('focus',()=>{ if(!pinned) show(el); });
+    el.addEventListener('blur',()=>{ if(!pinned) hide(); });
+    el.addEventListener('click',e=>{ e.stopPropagation(); if(pinned===el){pinned=null;hide();}else{pinned=el;show(el);} });
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();} });
+  });
+  pop.addEventListener('click',e=>e.stopPropagation());
+  document.addEventListener('click',()=>{ if(pinned){pinned=null;hide();} });
+  addEventListener('keydown',e=>{ if(e.key==='Escape'&&pinned){pinned=null;hide();} });
+  addEventListener('scroll',()=>{ if(pinned) show(pinned); },true);
+})();
+</script>
+</body>
+</html>

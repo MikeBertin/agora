@@ -1,0 +1,113 @@
+{
+  "domain": "Job Offer",
+  "sessions": [
+    {
+      "file": "frequency-v1__vs__boulware.json",
+      "agentA": "frequency-v1",
+      "agentB": "boulware",
+      "labelA": "Frequency v1 (faithful)",
+      "labelB": "Boulware",
+      "agreement": true,
+      "utilA": 0.802,
+      "utilB": 0.365,
+      "rounds": 981,
+      "paretoOptimal": false
+    },
+    {
+      "file": "frequency-v1__vs__conceder.json",
+      "agentA": "frequency-v1",
+      "agentB": "conceder",
+      "labelA": "Frequency v1 (faithful)",
+      "labelB": "Conceder",
+      "agreement": true,
+      "utilA": 0.825,
+      "utilB": 0.37,
+      "rounds": 811,
+      "paretoOptimal": true
+    },
+    {
+      "file": "frequency-v1__vs__hardliner.json",
+      "agentA": "frequency-v1",
+      "agentB": "hardliner",
+      "labelA": "Frequency v1 (faithful)",
+      "labelB": "Hardliner",
+      "agreement": false,
+      "utilA": 0.3,
+      "utilB": 0.3,
+      "rounds": 990,
+      "paretoOptimal": false
+    },
+    {
+      "file": "frequency-v1__vs__random.json",
+      "agentA": "frequency-v1",
+      "agentB": "random",
+      "labelA": "Frequency v1 (faithful)",
+      "labelB": "Random",
+      "agreement": false,
+      "utilA": 0.3,
+      "utilB": 0.3,
+      "rounds": 990,
+      "paretoOptimal": false
+    },
+    {
+      "file": "frequency-v2__vs__boulware.json",
+      "agentA": "frequency-v2",
+      "agentB": "boulware",
+      "labelA": "Frequency v2 (improved)",
+      "labelB": "Boulware",
+      "agreement": true,
+      "utilA": 0.7145,
+      "utilB": 0.4445,
+      "rounds": 958,
+      "paretoOptimal": false
+    },
+    {
+      "file": "frequency-v2__vs__conceder.json",
+      "agentA": "frequency-v2",
+      "agentB": "conceder",
+      "labelA": "Frequency v2 (improved)",
+      "labelB": "Conceder",
+      "agreement": true,
+      "utilA": 0.825,
+      "utilB": 0.37,
+      "rounds": 885,
+      "paretoOptimal": true
+    },
+    {
+      "file": "frequency-v2__vs__hardliner.json",
+      "agentA": "frequency-v2",
+      "agentB": "hardliner",
+      "labelA": "Frequency v2 (improved)",
+      "labelB": "Hardliner",
+      "agreement": false,
+      "utilA": 0.3,
+      "utilB": 0.3,
+      "rounds": 990,
+      "paretoOptimal": false
+    },
+    {
+      "file": "frequency-v2__vs__random.json",
+      "agentA": "frequency-v2",
+      "agentB": "random",
+      "labelA": "Frequency v2 (improved)",
+      "labelB": "Random",
+      "agreement": false,
+      "utilA": 0.3,
+      "utilB": 0.3,
+      "rounds": 990,
+      "paretoOptimal": false
+    },
+    {
+      "file": "frequency-v1__vs__frequency-v2.json",
+      "agentA": "frequency-v1",
+      "agentB": "frequency-v2",
+      "labelA": "Frequency v1 (faithful)",
+      "labelB": "Frequency v2 (improved)",
+      "agreement": true,
+      "utilA": 0.4735,
+      "utilB": 0.65,
+      "rounds": 990,
+      "paretoOptimal": false
+    }
+  ]
+}

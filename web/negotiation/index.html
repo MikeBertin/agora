@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agora — Automated Negotiation</title>
+<meta name="description" content="Two agents negotiate a job offer under a deadline: the bidding dance against the Pareto frontier, concession curves, and a frequency model learning the opponent's hidden preferences. Runs live in the browser via Pyodide.">
+<style>
+  :root{
+    --bg:#0a0a0f; --panel:#13131c; --line:#23232f; --line2:#2c2c3a;
+    --ink:#e7e7ef; --muted:#8a8a9c; --accent:#b9a3ff;
+    --a:#7cc4ff; --b:#ff8f6b; --pareto:#6ee08a; --nash:#ffc266;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:radial-gradient(1100px 700px at 50% -10%,#16161f,#0a0a0f 60%);
+    color:var(--ink);min-height:100vh;
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  .page{max-width:1120px;margin:0 auto;padding:36px 24px 56px}
+  a.back{color:var(--muted);text-decoration:none;font-size:13px;font-family:var(--mono)}
+  a.back:hover{color:var(--ink)}
+  .hero{margin:12px 0 20px}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.4px}
+  .sub{color:var(--muted);font-size:14px;line-height:1.6;max-width:760px;margin:0}
+  .sub b{color:var(--ink);font-weight:600}
+
+  .controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin-bottom:18px}
+  .ctl{display:flex;flex-direction:column;gap:5px}
+  .ctl label{font-family:var(--mono);font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted)}
+  select,button{font:inherit;font-size:13.5px;color:var(--ink);background:#1a1a25;
+    border:1px solid var(--line2);border-radius:8px;padding:7px 10px}
+  select{min-width:168px}
+  button{cursor:pointer} button:hover{border-color:#3a3a4d}
+  button.primary{background:linear-gradient(180deg,#1e3a52,#16293a);border-color:#2c4d68;color:#cfe9ff}
+  button:disabled{opacity:.5;cursor:default}
+  .spacer{flex:1}
+  .mode{display:flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+  .mode button{border:0;border-radius:0;background:#15151e}
+  .mode button.on{background:#26314a;color:#cfe9ff}
+
+  .cols{display:flex;gap:18px;align-items:flex-start}
+  @media(max-width:900px){.cols{flex-direction:column}}
+  .col-left{flex:1 1 560px;min-width:0;display:flex;flex-direction:column;gap:14px}
+  .col-right{flex:0 0 372px;display:flex;flex-direction:column;gap:14px}
+  @media(max-width:900px){.col-right{flex:1 1 auto;width:100%}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 14px 10px}
+  .panel h3{margin:0 0 2px;font-size:14.5px}
+  .panel .psub{margin:0 0 10px;color:var(--muted);font-size:12px;line-height:1.45}
+  canvas{width:100%;display:block;border-radius:6px}
+  .legend{display:flex;flex-wrap:wrap;gap:13px;margin-top:8px;font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  .transport{display:flex;align-items:center;gap:13px}
+  .transport input[type=range]{flex:1;accent-color:var(--a)}
+  .tlabel{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:120px}
+
+  .outcome{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 18px}
+  .stat{display:flex;flex-direction:column}
+  .stat .k{font-family:var(--mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted)}
+  .stat .v{font-size:18px;font-weight:600;margin-top:2px;font-family:var(--mono)}
+  .pill{font-family:var(--mono);font-size:11px;padding:3px 10px;border-radius:999px;border:1px solid var(--line2)}
+  .pill.deal{color:#9af0c8;border-color:#2c5d46;background:#142a21}
+  .pill.nodeal{color:#ffb0a0;border-color:#5d2c2c;background:#2a1414}
+  .pill.pareto{color:#bff3ec;border-color:#2c5d57;background:#13292a}
+  #status{font-family:var(--mono);font-size:12px;color:var(--muted)}
+
+  /* "things to notice" */
+  .notice{margin-top:30px;border-top:1px solid var(--line);padding-top:22px}
+  .notice-title{font-size:12px;text-transform:uppercase;letter-spacing:1.6px;color:var(--muted);margin:0 0 14px;font-weight:600}
+  .notice-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:900px){.notice-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.notice-grid{grid-template-columns:1fr}}
+  .ncard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+  .ncard h3{margin:0 0 7px;font-size:14px;font-weight:600}
+  .ncard p{margin:0 0 11px;color:var(--muted);font-size:12.5px;line-height:1.5}
+
+  /* hover-to-explain */
+  .x{color:var(--accent);border-bottom:1px dotted currentColor;cursor:help;white-space:nowrap}
+  .x::after{content:'ⓘ';font-size:.7em;vertical-align:.35em;margin-left:1px;opacity:.7}
+  .x:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+  .x.why{white-space:normal;font-size:12.5px;font-weight:600}
+  #pop{position:fixed;z-index:60;max-width:310px;background:#15151f;border:1px solid #2e2e3e;
+    border-radius:12px;padding:13px 15px;box-shadow:0 22px 55px -16px #000,0 0 0 1px #000;
+    font-size:13px;line-height:1.55;visibility:hidden;opacity:0;transform:translateY(4px);
+    pointer-events:none;transition:opacity .13s,transform .13s}
+  #pop.show{visibility:visible;opacity:1;transform:none;pointer-events:auto}
+  #pop h4{margin:0 0 7px;font-size:13.5px;color:var(--accent)}
+  #pop p{margin:0 0 8px}#pop p:last-child{margin:0}
+  #pop b{color:var(--ink);font-weight:600}
+  #pop .muted{color:var(--muted);font-size:12px}
+  #pop .eq{font-family:var(--mono);background:#0e0e16;border:1px solid var(--line);border-radius:7px;
+    padding:8px 10px;margin:9px 0;font-size:12.5px;text-align:center;color:#e6ebff}
+  #pop .fig{display:block;margin:9px auto 5px}
+</style>
+</head>
+<body>
+<div class="page">
+  <a class="back" href="../">&larr; Agora</a>
+  <header class="hero">
+    <h1>Automated Negotiation</h1>
+    <p class="sub">A candidate (<b style="color:var(--a)">A</b>) and an employer
+    (<b style="color:var(--b)">B</b>) negotiate a five-issue job offer, trading offers under a
+    1000-round deadline by the <span class="x" data-pop="saop">alternating-offers protocol</span>
+    until someone accepts or time runs out. <b>Playback</b> animates a precomputed run;
+    <b>Live</b> runs the actual Python engine in your browser via Pyodide.</p>
+  </header>
+
+  <div class="controls">
+    <div class="ctl"><label for="agentA">Our agent (A)</label><select id="agentA"></select></div>
+    <div class="ctl"><label for="agentB">Opponent (B)</label><select id="agentB"></select></div>
+    <div class="ctl"><label>Mode</label>
+      <div class="mode"><button id="modePlay" class="on">Playback</button><button id="modeLive">Live · Python</button></div>
+    </div>
+    <div class="ctl" id="liveCtls" style="display:none">
+      <label for="deadline">Deadline · <span id="dlVal">1000</span></label>
+      <input id="deadline" type="range" min="200" max="2000" step="100" value="1000" style="width:150px;accent-color:var(--a)">
+    </div>
+    <div class="spacer"></div>
+    <div class="ctl"><label>&nbsp;</label><button id="runLive" class="primary" style="display:none">Run live ▶</button></div>
+  </div>
+
+  <div class="cols">
+    <div class="col-left">
+      <div class="panel">
+        <h3>The bidding dance</h3>
+        <p class="psub">Every possible deal plotted by the two agents' utilities. Offers appear as
+        they are made; the aim is to reach the <span class="x" data-pop="pareto">Pareto frontier</span> —
+        and ideally the <span class="x" data-pop="nash">Nash point</span> on it.</p>
+        <canvas id="bidCanvas" height="430"></canvas>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--a)"></i>A's offers</span>
+          <span><i class="sw" style="background:var(--b)"></i>B's offers</span>
+          <span><i class="sw" style="background:var(--pareto)"></i>Pareto frontier</span>
+          <span><i class="sw" style="background:var(--nash)"></i>Nash point</span>
+          <span><i class="sw" style="background:#fff"></i>Agreement</span>
+        </div>
+      </div>
+      <div class="transport">
+        <button id="playBtn">▶ Play</button>
+        <input id="scrub" type="range" min="0" max="0" value="0">
+        <div class="tlabel" id="tlabel">round 0</div>
+      </div>
+      <div class="outcome" id="outcome"></div>
+      <div style="font-family:var(--mono);font-size:12px;color:var(--muted);min-height:14px"><span id="status"></span></div>
+    </div>
+
+    <div class="col-right">
+      <div class="panel">
+        <h3>Concession curves</h3>
+        <p class="psub">The utility each agent claims for itself, over time. A
+        <span class="x" data-pop="boulware">Boulware</span> opponent barely moves until late; the
+        lines nearing each other is what makes a deal possible.</p>
+        <canvas id="concCanvas" height="230"></canvas>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--a)"></i>A demands</span>
+          <span><i class="sw" style="background:var(--b)"></i>B demands</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Opponent model learning</h3>
+        <p class="psub">A's <span class="x" data-pop="freqmodel">frequency model</span> estimates how
+        much each issue matters to B. Solid = current estimate; outlined = B's true weights.</p>
+        <canvas id="modelCanvas" height="230"></canvas>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--a)"></i>A's estimate of B</span>
+          <span><i class="sw" style="border:1px solid var(--muted);background:transparent"></i>B's true weights</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="notice">
+    <h2 class="notice-title">Things to notice</h2>
+    <div class="notice-grid">
+      <div class="ncard">
+        <h3>Stonewalling can win</h3>
+        <p>Run <b>v1</b> against the <b>Conceder</b>: v1 never drops its 0.8 demand, simply waiting
+        while the opponent caves. Against a pure conceder, refusing to move is near-optimal.</p>
+        <span class="x why" data-pop="stonewall">Why v1 isn't simply worse</span>
+      </div>
+      <div class="ncard">
+        <h3>A hardliner gets nothing</h3>
+        <p>Pick the <b>Hardliner</b> opponent: it repeats its best bid forever. Neither agent can
+        find a trade both prefer to walking away, so the result is <b>no deal</b>.</p>
+        <span class="x why" data-pop="hardliner">The reservation values</span>
+      </div>
+      <div class="ncard">
+        <h3>A learns B's priorities</h3>
+        <p>In the model panel, A's estimate of <b>Salary</b> and <b>Location</b> rises — B's two
+        top issues — inferred purely from which values B keeps repeating.</p>
+        <span class="x why" data-pop="learning">How frequency reveals weight</span>
+      </div>
+      <div class="ncard">
+        <h3>Money left on the table</h3>
+        <p>Deals often land just <i>inside</i> the frontier. <b>Distance to Nash</b> measures the
+        joint value lost — surplus neither side managed to capture.</p>
+        <span class="x why" data-pop="efficiency">Efficiency vs fairness</span>
+      </div>
+    </div>
+  </section>
+
+  <p class="sub" style="margin-top:26px;border-top:1px solid var(--line);padding-top:16px">
+    <b>v1 (faithful)</b> is a direct port of my COMP6203 GENIUS coursework agent — fixed 0.8 target,
+    <span class="x" data-pop="acnext">acceptance</span> only at the deadline. <b>v2 (improved)</b>
+    adds time-dependent concession and AC-next acceptance. Both share the same frequency opponent
+    model and Pareto-seeking bid choice.</p>
+</div>
+
+<div id="pop" role="tooltip"></div>
+
+<script>
+const PALETTE = getComputedStyle(document.documentElement);
+const C = k => PALETTE.getPropertyValue(k).trim();
+const COL = {a:C('--a'), b:C('--b'), pareto:C('--pareto'), nash:C('--nash'),
+             ink:C('--ink'), muted:C('--muted'), line:C('--line2')};
+
+let trace=null, offers=[], idx=0, playing=false, mode='play';
+let pyodide=null, pyReady=false, manifest=null;
+const $ = id => document.getElementById(id);
+
+async function loadManifest(){
+  manifest = await (await fetch('../data/manifest.json')).json();
+  const aKinds=[...new Set(manifest.sessions.map(s=>s.agentA))];
+  const sel=$('agentA'); sel.innerHTML='';
+  for(const k of aKinds){ const lab=manifest.sessions.find(s=>s.agentA===k); sel.add(new Option(lab.labelA,k)); }
+  syncOpponents();
+}
+function syncOpponents(){
+  const a=$('agentA').value, sel=$('agentB'); sel.innerHTML='';
+  for(const s of manifest.sessions.filter(s=>s.agentA===a)) sel.add(new Option(s.labelB,s.agentB));
+}
+async function loadPlayback(){
+  const a=$('agentA').value, b=$('agentB').value;
+  setStatus('loading…');
+  trace=await (await fetch(`../data/${a}__vs__${b}.json`)).json();
+  onTraceLoaded(); setStatus('');
+}
+function onTraceLoaded(){
+  offers=trace.rounds.filter(r=>r.type==='offer'); idx=0;
+  $('scrub').max=trace.rounds.length-1; $('scrub').value=0;
+  renderOutcome(); seek(0);
+}
+function seek(i){
+  idx=Math.max(0,Math.min(i,trace.rounds.length-1));
+  $('scrub').value=idx;
+  const r=trace.rounds[idx];
+  $('tlabel').textContent=`round ${r.round} · t=${r.t.toFixed(2)}`;
+  draw();
+}
+let raf=null;
+function tick(){
+  if(!playing) return;
+  const step=Math.max(1,Math.round(trace.rounds.length/360));
+  seek(idx+step);
+  if(idx>=trace.rounds.length-1){ playing=false; $('playBtn').textContent='▶ Play'; return; }
+  raf=requestAnimationFrame(tick);
+}
+function togglePlay(){
+  if(!trace) return;
+  if(idx>=trace.rounds.length-1) seek(0);
+  playing=!playing; $('playBtn').textContent=playing?'❚❚ Pause':'▶ Play';
+  if(playing) raf=requestAnimationFrame(tick);
+}
+
+function fitCanvas(cv){
+  const dpr=window.devicePixelRatio||1, w=cv.clientWidth, h=parseInt(cv.getAttribute('height'));
+  cv.width=w*dpr; cv.height=h*dpr;
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx,w,h};
+}
+function draw(){ if(!trace) return; drawBid(); drawConcession(); drawModel(); }
+
+function drawBid(){
+  const {ctx,w,h}=fitCanvas($('bidCanvas'));
+  const pad={l:48,r:18,t:16,b:40};
+  const X=u=>pad.l+(w-pad.l-pad.r)*u, Y=u=>h-pad.b-(h-pad.t-pad.b)*u;
+  ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle=C('--line');ctx.lineWidth=1;ctx.strokeRect(pad.l,pad.t,w-pad.l-pad.r,h-pad.t-pad.b);
+  ctx.fillStyle=COL.muted;ctx.font='11px '+C('--mono');
+  for(let g=0;g<=1.0001;g+=0.25){
+    ctx.strokeStyle='#1c1c27';
+    ctx.beginPath();ctx.moveTo(X(g),Y(0));ctx.lineTo(X(g),Y(1));ctx.stroke();
+    ctx.beginPath();ctx.moveTo(X(0),Y(g));ctx.lineTo(X(1),Y(g));ctx.stroke();
+    ctx.fillText(g.toFixed(2),X(g)-9,h-pad.b+15);ctx.fillText(g.toFixed(2),6,Y(g)+4);
+  }
+  ctx.save();ctx.translate(14,h/2);ctx.rotate(-Math.PI/2);ctx.fillStyle=COL.b;ctx.fillText("B's utility",-24,0);ctx.restore();
+  ctx.fillStyle=COL.a;ctx.fillText("A's utility",w/2-22,h-6);
+  for(const p of trace.geometry.outcomes){ ctx.fillStyle='rgba(140,140,160,0.13)';ctx.fillRect(X(p.utilA)-1.1,Y(p.utilB)-1.1,2.2,2.2); }
+  const f=trace.geometry.paretoFrontier;
+  ctx.strokeStyle=hexA(COL.pareto,0.8);ctx.lineWidth=1.8;ctx.beginPath();
+  f.forEach((p,i)=> i?ctx.lineTo(X(p.utilA),Y(p.utilB)):ctx.moveTo(X(p.utilA),Y(p.utilB)));ctx.stroke();
+  const shown=trace.rounds.slice(0,idx+1).filter(r=>r.type==='offer');
+  ctx.lineWidth=1;ctx.strokeStyle='rgba(160,170,190,0.18)';ctx.beginPath();
+  shown.forEach((r,i)=> i?ctx.lineTo(X(r.utilA),Y(r.utilB)):ctx.moveTo(X(r.utilA),Y(r.utilB)));ctx.stroke();
+  for(const r of shown){
+    ctx.beginPath();ctx.arc(X(r.utilA),Y(r.utilB),3,0,7);
+    ctx.fillStyle=r.actor==='A'?COL.a:COL.b;ctx.fill();
+    ctx.lineWidth=1;ctx.strokeStyle='rgba(8,8,14,0.85)';ctx.stroke(); }
+  if(shown.length){ const last=shown[shown.length-1];
+    ctx.strokeStyle=last.actor==='A'?COL.a:COL.b;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(X(last.utilA),Y(last.utilB),5.5,0,7);ctx.stroke(); }
+  const cur=trace.rounds[idx];
+  if(cur&&cur.type==='accept'){ const o=trace.outcome; drawStar(ctx,X(o.utilA),Y(o.utilB),9,'#fff'); }
+  // Nash point drawn last so it stays visible under the offers/agreement
+  const n=trace.geometry.nash;
+  ctx.strokeStyle=hexA(COL.nash,0.45);ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(X(n.utilA),Y(n.utilB),8.5,0,7);ctx.stroke();
+  ctx.fillStyle=COL.nash;ctx.beginPath();ctx.arc(X(n.utilA),Y(n.utilB),4.5,0,7);ctx.fill();
+  ctx.strokeStyle='#0a0a0f';ctx.lineWidth=1.5;ctx.stroke();
+}
+function drawConcession(){
+  const {ctx,w,h}=fitCanvas($('concCanvas'));
+  const pad={l:40,r:14,t:14,b:30};
+  const X=t=>pad.l+(w-pad.l-pad.r)*t, Y=u=>h-pad.b-(h-pad.t-pad.b)*u;
+  ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle=C('--line');ctx.strokeRect(pad.l,pad.t,w-pad.l-pad.r,h-pad.t-pad.b);
+  ctx.fillStyle=COL.muted;ctx.font='10px '+C('--mono');
+  for(let g=0;g<=1.0001;g+=0.25) ctx.fillText(g.toFixed(1),6,Y(g)+3);
+  ctx.fillText('t=0',pad.l-4,h-pad.b+14);ctx.fillText('deadline',w-pad.r-44,h-pad.b+14);
+  const shown=trace.rounds.slice(0,idx+1).filter(r=>r.type==='offer');
+  const series=(actor,col,key)=>{ ctx.strokeStyle=col;ctx.lineWidth=1.6;ctx.beginPath();let s=false;
+    for(const r of shown){ if(r.actor!==actor) continue; const x=X(r.t),y=Y(r[key]); s?ctx.lineTo(x,y):ctx.moveTo(x,y);s=true; } ctx.stroke(); };
+  series('A',COL.a,'utilA'); series('B',COL.b,'utilB');
+}
+function drawModel(){
+  const {ctx,w,h}=fitCanvas($('modelCanvas'));
+  ctx.clearRect(0,0,w,h);
+  const r=trace.rounds[idx]; let snap=null;
+  for(const m of trace.modelTrace){ if(m.round<=r.round) snap=m; else break; }
+  const issues=trace.domain.issues.map(i=>i.name), truth=trace.trueWeightsB;
+  const pad={l:14,r:14,t:18,b:36}, n=issues.length, gw=(w-pad.l-pad.r)/n, maxv=0.4;
+  const Y=v=>h-pad.b-(h-pad.t-pad.b)*Math.min(v,maxv)/maxv;
+  ctx.font='10px '+C('--mono');
+  issues.forEach((iss,i)=>{
+    const cx=pad.l+gw*i, bw=gw*0.30;
+    const est=snap?snap.issueWeights[iss]:0, tv=truth[iss];
+    ctx.fillStyle=hexA(COL.a,0.8); ctx.fillRect(cx+gw*0.18,Y(est),bw,(h-pad.b)-Y(est));
+    ctx.strokeStyle=COL.muted;ctx.lineWidth=1.2; ctx.strokeRect(cx+gw*0.52,Y(tv),bw,(h-pad.b)-Y(tv));
+    ctx.fillStyle=COL.muted; ctx.font='9px '+C('--mono'); ctx.textAlign='center';
+    ctx.fillText(iss,cx+gw*0.5,h-pad.b+14);
+  });
+  ctx.textAlign='left'; ctx.font='10px '+C('--mono');
+  ctx.fillStyle=COL.muted;ctx.fillText(snap?`after ${snap.bidsSeen||0} offers seen`:'no data yet',pad.l,12);
+}
+function drawStar(ctx,cx,cy,r,col){
+  ctx.fillStyle=col;ctx.beginPath();
+  for(let i=0;i<10;i++){const a=Math.PI/5*i-Math.PI/2;const rr=i%2?r*0.45:r;
+    const x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+  ctx.closePath();ctx.fill();ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.stroke();
+}
+function hexA(hex,a){const n=hex.replace('#','');return `rgba(${parseInt(n.slice(0,2),16)},${parseInt(n.slice(2,4),16)},${parseInt(n.slice(4,6),16)},${a})`;}
+
+function renderOutcome(){
+  const o=trace.outcome, el=$('outcome'); el.innerHTML='';
+  el.appendChild(pill(o.agreement?'deal':'nodeal', o.agreement?'AGREEMENT':'NO DEAL'));
+  if(o.agreement&&o.paretoOptimal) el.appendChild(pill('pareto','PARETO-OPTIMAL'));
+  el.appendChild(stat("A's utility",o.utilA.toFixed(3),COL.a));
+  el.appendChild(stat("B's utility",o.utilB.toFixed(3),COL.b));
+  el.appendChild(stat('Rounds',o.rounds));
+  if(o.agreement) el.appendChild(stat('Dist. to Nash',o.distToNash.toFixed(3)));
+}
+function pill(cls,txt){const s=document.createElement('span');s.className='pill '+cls;s.textContent=txt;return s;}
+function stat(k,v,col){const d=document.createElement('div');d.className='stat';
+  d.innerHTML=`<span class="k">${k}</span><span class="v"${col?` style="color:${col}"`:''}>${v}</span>`;return d;}
+function setStatus(t){$('status').textContent=t;}
+
+const CORE_FILES=['__init__.py','domain.py','model.py','agents.py','analysis.py','protocol.py','domains.py'];
+async function ensurePyodide(){
+  if(pyReady) return;
+  setStatus('loading Python…');
+  if(!window.loadPyodide){ await new Promise((res,rej)=>{const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);}); }
+  pyodide=await loadPyodide();
+  await pyodide.runPythonAsync(`import os\nos.makedirs('core',exist_ok=True)`);
+  for(const f of CORE_FILES){ const txt=await (await fetch('../core/'+f)).text(); pyodide.FS.writeFile('core/'+f,txt); }
+  pyReady=true; setStatus('Python ready');
+}
+async function runLive(){
+  try{
+    $('runLive').disabled=true; await ensurePyodide();
+    const a=$('agentA').value,b=$('agentB').value,dl=parseInt($('deadline').value);
+    setStatus('running…');
+    const js=await pyodide.runPythonAsync(`
+import json
+from core.domains import PROFILES
+from core.protocol import run_session
+d,ua,ub = PROFILES['job-offer']
+json.dumps(run_session(d,ua,ub,'${a}','${b}',deadline=${dl},seed=42))
+`);
+    trace=JSON.parse(js); onTraceLoaded(); setStatus('live ✓ ('+dl+' rounds)');
+  }catch(e){ setStatus('error: '+e.message); console.error(e); }
+  finally{ $('runLive').disabled=false; }
+}
+
+$('agentA').onchange=()=>{ syncOpponents(); if(mode==='play') loadPlayback(); };
+$('agentB').onchange=()=>{ if(mode==='play') loadPlayback(); };
+$('playBtn').onclick=togglePlay;
+$('scrub').oninput=e=>{ playing=false;$('playBtn').textContent='▶ Play'; seek(+e.target.value); };
+$('deadline').oninput=e=>$('dlVal').textContent=e.target.value;
+$('runLive').onclick=runLive;
+$('modePlay').onclick=()=>setMode('play');
+$('modeLive').onclick=()=>setMode('live');
+window.addEventListener('resize',()=>{ if(trace) draw(); });
+function setMode(m){
+  mode=m;
+  $('modePlay').classList.toggle('on',m==='play'); $('modeLive').classList.toggle('on',m==='live');
+  $('liveCtls').style.display=m==='live'?'flex':'none'; $('runLive').style.display=m==='live'?'inline-block':'none';
+  if(m==='play') loadPlayback(); else setStatus('press “Run live” to run the Python engine in-browser');
+}
+(async function init(){ await loadManifest(); await loadPlayback(); })();
+
+// ---- hover/tap-to-explain popovers ----
+const POP = {
+  saop:{title:'Alternating-offers protocol (SAOP)',html:`
+    <p>The agents take turns. On your turn you either <b>make a counter-offer</b>, <b>accept</b> the
+    offer on the table, or <b>walk away</b>. Bilateral bargaining as a strict back-and-forth.</p>
+    <p class="muted">Time is normalised to t ∈ [0,1] over the round deadline; if no one accepts by
+    t=1, both fall back to their walk-away value.</p>`},
+  pareto:{title:'The Pareto frontier',html:`
+    <p>The set of deals where you <b>cannot help one side without hurting the other</b>. Any deal
+    below it is wasteful — a different deal exists that's better for someone and worse for no one.</p>
+    <svg class="fig" width="210" height="92" viewBox="0 0 210 92" xmlns="http://www.w3.org/2000/svg">
+      <line x1="26" y1="8" x2="26" y2="74" stroke="#2a2a38"/><line x1="26" y1="74" x2="198" y2="74" stroke="#2a2a38"/>
+      <text x="4" y="16" fill="#6b6b80" font-size="9" font-family="monospace">uB</text>
+      <text x="188" y="86" fill="#6b6b80" font-size="9" font-family="monospace">uA</text>
+      <path d="M34,20 Q120,30 186,68" fill="none" stroke="#5fd0c5" stroke-width="2"/>
+      <circle cx="92" cy="60" r="4" fill="#ff8f6b"/><text x="78" y="56" fill="#9a9aac" font-size="9" font-family="monospace">wasteful</text>
+      <circle cx="120" cy="36" r="4" fill="#5fd0c5"/>
+      <line x1="92" y1="60" x2="120" y2="36" stroke="#6b6b80" stroke-dasharray="2 2"/>
+    </svg>
+    <p class="muted">The teal curve is computed exactly by enumerating all 960 possible deals.</p>`},
+  nash:{title:'The Nash bargaining point',html:`
+    <p>A principled "fair + efficient" deal: the point on the frontier that <b>maximises the product
+    of both sides' gains</b> over their walk-away values. It rewards joint surplus, not greed.</p>
+    <div class="eq">max&nbsp;(u<sub>A</sub> − r<sub>A</sub>) · (u<sub>B</sub> − r<sub>B</sub>)</div>
+    <p class="muted">r is each side's <b>reservation value</b>. The gold dot marks it; "distance to
+    Nash" in the readout is how far the actual deal fell from it.</p>`},
+  boulware:{title:'Boulware vs Conceder',html:`
+    <p>Time-dependent tactics. A <b>Boulware</b> agent holds out near its maximum and only concedes
+    sharply in the final moments; a <b>Conceder</b> gives ground quickly and early.</p>
+    <div class="eq">target(t) = r + (1−r)·(1 − t<sup>1/e</sup>)</div>
+    <p class="muted">e &lt; 1 is tough (Boulware), e &gt; 1 is soft (Conceder). It's the classic
+    monotonic concession curve from the negotiation literature.</p>`},
+  freqmodel:{title:'The frequency opponent model',html:`
+    <p>Neither side reveals its preferences, so A <b>infers them from behaviour</b>. Two heuristics,
+    both from the coursework agent:</p>
+    <p><b>Issue weights</b> — issues where B keeps repeating the <i>same</i> value clearly matter to
+    B, so concentration of offers ⇒ higher estimated weight.</p>
+    <p><b>Value utilities</b> — within an issue, the more often B offers a value, the higher A scores
+    it for B (by frequency rank).</p>
+    <p class="muted">A then offers, among deals good enough for itself, the one this model rates best
+    for B — chasing the frontier.</p>`},
+  acnext:{title:'When to accept (AC-next)',html:`
+    <p>The faithful <b>v1</b> accepts only at the very deadline — risking a last-second scramble or
+    no deal at all. The improved <b>v2</b> uses <b>AC-next</b>: accept the offer on the table if it's
+    <b>at least as good as the counter you were about to send</b>.</p>
+    <p class="muted">A small change with a big effect — it stops you haggling past a deal that already
+    beats your own next move.</p>`},
+  stonewall:{title:'Why stonewalling isn’t simply wrong',html:`
+    <p>v1's fixed 0.8 demand looks naive, but against an opponent that <b>concedes monotonically</b>,
+    standing firm is close to optimal: you give up nothing and let them come to you.</p>
+    <p class="muted">v1's real failures are elsewhere — it reaches <b>no deal</b> against a hardliner,
+    and loses the <b>head-to-head against v2</b>, which concedes gracefully and still ends ahead.
+    There's no single best strategy; it depends who you're facing.</p>`},
+  hardliner:{title:'No deal is sometimes rational',html:`
+    <p>Each agent has a <b>reservation value</b> — the utility of walking away (0.3 here). A deal only
+    happens if <i>both</i> sides prefer it to walking.</p>
+    <p class="muted">A hardliner only ever offers its own best bid, which is near-worthless to the
+    opponent. No bid beats walking away for both at once, so the protocol ends with no agreement —
+    the correct outcome, not a bug.</p>`},
+  learning:{title:'How frequency reveals weight',html:`
+    <p>B can't say "Salary matters most to me", but its <b>offers betray it</b>. On issues B cares
+    about, it clings to its preferred value; on issues it doesn't, its offers wander.</p>
+    <div class="eq">ŵ<sub>i</sub> ∝ Σ<sub>v</sub> freq(v)<sup>2</sup></div>
+    <p class="muted">That concentration measure (a sum of squared frequencies) rises for issues B is
+    rigid on — which is exactly the issues that weigh heavily in B's utility.</p>`},
+  efficiency:{title:'Efficiency vs fairness',html:`
+    <p><b>Pareto-optimal</b> means no joint value was wasted — you reached the frontier. <b>Nash</b>
+    additionally picks a balanced point on it. A deal can be one without the other.</p>
+    <p class="muted">"Distance to Nash" captures both: a far-off deal either left surplus uncaptured
+    (inside the frontier) or split it lopsidedly (along the frontier, far from the balanced point).</p>`},
+};
+(function(){
+  const pop=$('pop'); let pinned=null;
+  function show(el){
+    const d=POP[el.dataset.pop]; if(!d) return;
+    pop.innerHTML='<h4>'+d.title+'</h4>'+d.html; pop.classList.add('show');
+    const r=el.getBoundingClientRect(),p=pop.getBoundingClientRect(),m=10;
+    let left=Math.max(m,Math.min(r.left+r.width/2-p.width/2,innerWidth-p.width-m));
+    let top=r.top-p.height-10; if(top<m) top=r.bottom+10;
+    pop.style.left=left+'px'; pop.style.top=top+'px';
+  }
+  function hide(){ pop.classList.remove('show'); }
+  document.querySelectorAll('.x').forEach(el=>{
+    el.tabIndex=0; el.setAttribute('role','button');
+    el.addEventListener('mouseenter',()=>{ if(!pinned) show(el); });
+    el.addEventListener('mouseleave',()=>{ if(!pinned) hide(); });
+    el.addEventListener('focus',()=>{ if(!pinned) show(el); });
+    el.addEventListener('blur',()=>{ if(!pinned) hide(); });
+    el.addEventListener('click',e=>{ e.stopPropagation(); if(pinned===el){pinned=null;hide();}else{pinned=el;show(el);} });
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();} });
+  });
+  pop.addEventListener('click',e=>e.stopPropagation());
+  document.addEventListener('click',()=>{ if(pinned){pinned=null;hide();} });
+  addEventListener('keydown',e=>{ if(e.key==='Escape'&&pinned){pinned=null;hide();} });
+  addEventListener('scroll',()=>{ if(pinned) show(pinned); },true);
+})();
+</script>
+</body>
+</html>

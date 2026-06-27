@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agora — Multi-Agent Systems Playground</title>
+<meta name="description" content="Automated negotiation, auctions, voting and distributed optimisation — interactive multi-agent demonstrations rebuilt from an AI MSc module, running in the browser.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mikebertin.github.io/agora/">
+<meta property="og:title" content="Agora — Multi-Agent Systems in the Browser">
+<meta property="og:description" content="Automated negotiation, auctions, voting & distributed optimisation — interactive demos with a real Python engine running live via Pyodide.">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root{
+    --bg:#0a0a0f; --panel:#13131c; --line:#23232f;
+    --ink:#e7e7ef; --muted:#8a8a9c;
+    --neg:#7cc4ff; --auc:#ffc266; --vote:#5fd0c5; --dcop:#c79bff;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:radial-gradient(1100px 700px at 50% -10%,#16161f,#0a0a0f 60%);
+    color:var(--ink);min-height:100vh;
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:64px 28px 56px}
+  header{margin-bottom:44px}
+  .badge{font-family:var(--mono);font-size:12px;letter-spacing:3px;color:var(--muted);text-transform:uppercase}
+  h1{font-size:46px;margin:8px 0 10px;letter-spacing:-.5px;
+     background:linear-gradient(90deg,var(--neg),var(--auc) 45%,var(--vote) 75%,var(--dcop));
+     -webkit-background-clip:text;background-clip:text;color:transparent}
+  .lede{color:var(--muted);font-size:15.5px;line-height:1.65;max-width:680px;margin:0}
+  .lede b{color:var(--ink);font-weight:600}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:38px}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  .card{display:block;text-decoration:none;color:inherit;background:var(--panel);
+        border:1px solid var(--line);border-radius:14px;padding:22px 22px 20px;
+        transition:transform .15s ease,border-color .15s ease}
+  .card.live:hover{transform:translateY(-3px)}
+  .card.soon{opacity:.55}
+  .card h2{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:10px}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .card p{margin:8px 0 0;color:var(--muted);font-size:14px;line-height:1.55}
+  .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;
+       color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 9px;margin-left:auto}
+  .c-neg .dot{background:var(--neg)} .c-auc .dot{background:var(--auc)}
+  .c-vote .dot{background:var(--vote)} .c-dcop .dot{background:var(--dcop)}
+  footer{margin-top:46px;color:var(--muted);font-size:13px;line-height:1.7}
+  footer a{color:var(--neg);text-decoration:none}
+  code{font-family:var(--mono);font-size:12.5px;background:#1a1a25;padding:1.5px 6px;border-radius:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="badge">Multi-Agent Systems · COMP6203</div>
+    <h1>Agora</h1>
+    <p class="lede">The Athenian <b>agora</b> was at once a marketplace, a bargaining floor and a
+    voting assembly. This one revisits the core problems of my <b>Intelligent Agents</b> MSc module —
+    automated <b>negotiation</b>, <b>auctions</b>, <b>voting</b> and distributed <b>optimisation</b> —
+    as interactive demonstrations. A real Python engine computes every result; the negotiation demo
+    even runs that engine <b>live in your browser</b> via Pyodide.</p>
+  </header>
+
+  <div class="grid">
+    <a class="card live c-neg" href="negotiation/">
+      <h2><span class="dot"></span>Negotiation<span class="tag">Live</span></h2>
+      <p>Two agents haggle over a job offer under a deadline. Watch the bidding dance against the
+      Pareto frontier, the concession curves cross, and a frequency model learn the opponent's
+      hidden priorities round by round.</p>
+    </a>
+    <a class="card live c-auc" href="auctions/">
+      <h2><span class="dot"></span>Auctions<span class="tag">Live</span></h2>
+      <p>English, Dutch, first-price and Vickrey auctions — bid shading, who wins, and the
+      revenue-equivalence theorem converging live, the mechanism-design route to allocating scarce supply.</p>
+    </a>
+    <a class="card live c-vote" href="voting/">
+      <h2><span class="dot"></span>Voting<span class="tag">Live</span></h2>
+      <p>The same ballots, different rules, different winners — plurality, Borda, instant-runoff and
+      the Condorcet cycle that breaks them all.</p>
+    </a>
+    <a class="card soon c-dcop" href="#">
+      <h2><span class="dot"></span>Distributed Optimisation<span class="tag">Soon</span></h2>
+      <p>DCOP: independent agents coordinate to optimise a shared objective under constraints — the
+      multi-agent backbone of resource-allocation and scheduling engines.</p>
+    </a>
+  </div>
+
+  <footer>
+    Open the demos straight from <code>index.html</code> — no build, no server.
+    Negotiation logic lives in a small pure-Python engine (<code>core/</code>) reused verbatim by
+    the browser through Pyodide. Rebuilt from the COMP6203 GENIUS coursework.<br>
+    <a href="https://github.com/mikebertin/agora">Source on GitHub</a>
+  </footer>
+</div>
+</body>
+</html>

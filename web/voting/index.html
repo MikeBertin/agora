@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agora — Voting</title>
+<meta name="description" content="The same ranked ballots, four voting rules, four different winners — plurality, Borda, instant-runoff and the Condorcet paradox, with a live pairwise graph. Runs the real Python engine via Pyodide.">
+<style>
+  :root{
+    --bg:#0a0a0f; --panel:#13131c; --line:#23232f; --line2:#2c2c3a;
+    --ink:#e7e7ef; --muted:#8a8a9c; --accent:#b9a3ff;
+    --A:#7cc4ff; --B:#ff8f6b; --C:#5fd0c5; --D:#ffc266;
+    --good:#9af0c8; --bad:#ff8f8f;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:radial-gradient(1100px 700px at 50% -10%,#16161f,#0a0a0f 60%);
+    color:var(--ink);min-height:100vh;
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  .page{max-width:1120px;margin:0 auto;padding:36px 24px 56px}
+  a.back{color:var(--muted);text-decoration:none;font-size:13px;font-family:var(--mono)}
+  a.back:hover{color:var(--ink)}
+  .hero{margin:12px 0 20px}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.4px}
+  .sub{color:var(--muted);font-size:14px;line-height:1.6;max-width:760px;margin:0}
+  .sub b{color:var(--ink);font-weight:600}
+
+  .controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin-bottom:18px}
+  .ctl{display:flex;flex-direction:column;gap:5px}
+  .ctl label{font-family:var(--mono);font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted)}
+  select,button{font:inherit;font-size:13.5px;color:var(--ink);background:#1a1a25;
+    border:1px solid var(--line2);border-radius:8px;padding:7px 10px}
+  select{min-width:200px}
+  button{cursor:pointer} button:hover{border-color:#3a3a4d}
+  button.primary{background:linear-gradient(180deg,#1e3a52,#16293a);border-color:#2c4d68;color:#cfe9ff}
+  button:disabled{opacity:.5;cursor:default}
+  .spacer{flex:1}
+  .mode{display:flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+  .mode button{border:0;border-radius:0;background:#15151e}
+  .mode button.on{background:#26314a;color:#cfe9ff}
+  .liverow{display:flex;gap:16px;flex-wrap:wrap}
+  .liverow .ctl input{width:120px;accent-color:var(--accent)}
+  #status{font-family:var(--mono);font-size:12px;color:var(--muted)}
+
+  .blurb{background:#14141d;border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:8px;padding:11px 14px;margin-bottom:18px;color:var(--muted);font-size:13px;line-height:1.55}
+  .blurb b{color:var(--ink)}
+
+  .cols{display:flex;gap:18px;align-items:flex-start}
+  @media(max-width:900px){.cols{flex-direction:column}}
+  .col-left{flex:1 1 540px;min-width:0;display:flex;flex-direction:column;gap:14px}
+  .col-right{flex:0 0 372px;display:flex;flex-direction:column;gap:14px}
+  @media(max-width:900px){.col-right{flex:1 1 auto;width:100%}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 14px 12px}
+  .panel h3{margin:0 0 2px;font-size:14.5px}
+  .panel .psub{margin:0 0 10px;color:var(--muted);font-size:12px;line-height:1.45}
+  canvas{width:100%;display:block;border-radius:6px}
+
+  .chip{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;
+    border-radius:6px;font-family:var(--mono);font-weight:700;font-size:12px;color:#0a0a0f;padding:0 7px}
+  .chip.lg{min-width:30px;height:30px;font-size:15px;border-radius:8px}
+
+  .rrow{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .rrow:last-child{border-bottom:0}
+  .rrow .rule{width:108px;font-weight:600;font-size:13.5px}
+  .rrow .rule small{display:block;color:var(--muted);font-weight:400;font-size:11px;font-family:var(--mono)}
+  .rrow .detail{color:var(--muted);font-size:11.5px;font-family:var(--mono);margin-left:auto;text-align:right;max-width:170px}
+  .nochip{display:inline-flex;align-items:center;height:30px;padding:0 10px;border-radius:8px;
+    font-family:var(--mono);font-size:12px;color:var(--bad);border:1px solid #5d2c2c;background:#2a1414}
+  .banner{margin-top:10px;border-radius:8px;padding:9px 12px;font-size:12.5px;font-family:var(--mono)}
+  .banner.dis{color:#ffd9a0;border:1px solid #5d4a2c;background:#2a2114}
+  .banner.agree{color:var(--good);border:1px solid #2c5d46;background:#142a21}
+
+  .electorate{display:flex;gap:10px;flex-wrap:wrap}
+  .bloc{flex:1 1 0;min-width:62px;background:#15151e;border:1px solid var(--line);border-radius:10px;padding:9px 8px}
+  .bloc .sz{font-family:var(--mono);font-size:12px;text-align:center;margin-bottom:3px;color:var(--ink)}
+  .bloc .szbar{height:4px;border-radius:3px;background:var(--accent);margin:0 auto 8px;opacity:.7}
+  .bloc .stack{display:flex;flex-direction:column;gap:4px}
+  .bloc .stack .chip{width:100%}
+  .bloc .rk{font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center;margin-bottom:2px}
+
+  .notice{margin-top:30px;border-top:1px solid var(--line);padding-top:22px}
+  .notice-title{font-size:12px;text-transform:uppercase;letter-spacing:1.6px;color:var(--muted);margin:0 0 14px;font-weight:600}
+  .notice-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:900px){.notice-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.notice-grid{grid-template-columns:1fr}}
+  .ncard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+  .ncard h3{margin:0 0 7px;font-size:14px;font-weight:600}
+  .ncard p{margin:0 0 11px;color:var(--muted);font-size:12.5px;line-height:1.5}
+
+  .x{color:var(--accent);border-bottom:1px dotted currentColor;cursor:help;white-space:nowrap}
+  .x::after{content:'ⓘ';font-size:.7em;vertical-align:.35em;margin-left:1px;opacity:.7}
+  .x:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+  .x.why{white-space:normal;font-size:12.5px;font-weight:600}
+  #pop{position:fixed;z-index:60;max-width:310px;background:#15151f;border:1px solid #2e2e3e;
+    border-radius:12px;padding:13px 15px;box-shadow:0 22px 55px -16px #000,0 0 0 1px #000;
+    font-size:13px;line-height:1.55;visibility:hidden;opacity:0;transform:translateY(4px);
+    pointer-events:none;transition:opacity .13s,transform .13s}
+  #pop.show{visibility:visible;opacity:1;transform:none;pointer-events:auto}
+  #pop h4{margin:0 0 7px;font-size:13.5px;color:var(--accent)}
+  #pop p{margin:0 0 8px}#pop p:last-child{margin:0}
+  #pop b{color:var(--ink);font-weight:600}
+  #pop .muted{color:var(--muted);font-size:12px}
+  #pop .eq{font-family:var(--mono);background:#0e0e16;border:1px solid var(--line);border-radius:7px;
+    padding:8px 10px;margin:9px 0;font-size:12.5px;text-align:center;color:#e6ebff}
+</style>
+</head>
+<body>
+<div class="page">
+  <a class="back" href="../">&larr; Agora</a>
+  <header class="hero">
+    <h1>Voting</h1>
+    <p class="sub">Voters rank the candidates; a rule turns those ballots into a winner. But
+    <b>which</b> rule? Plurality, <span class="x" data-pop="borda">Borda</span>,
+    <span class="x" data-pop="irv">instant-runoff</span> and the
+    <span class="x" data-pop="condorcet">Condorcet</span> method can each crown a <b>different</b>
+    winner from the very same votes — and sometimes the majority's will
+    <span class="x" data-pop="paradox">cycles</span> with no winner at all.
+    <b>Live</b> runs the real Python engine in your browser via Pyodide.</p>
+  </header>
+
+  <div class="controls">
+    <div class="ctl" id="scenCtl"><label for="scenario">Scenario</label><select id="scenario"></select></div>
+    <div class="ctl" style="flex:1;min-width:220px"><label>&nbsp;</label>
+      <span style="color:var(--muted);font-size:12.5px;line-height:1.4">Pick a scenario — or switch to
+      <b style="color:var(--ink)">Live · Python</b> (lower left) to rebalance the electorate and watch the cycle appear.</span></div>
+  </div>
+
+  <div class="blurb" id="blurb"></div>
+
+  <div class="cols">
+    <div class="col-left">
+      <div class="panel">
+        <h3>Winner under each rule</h3>
+        <p class="psub">The same ballots, four rules. Watch where they agree — and where they don't.</p>
+        <div id="results"></div>
+        <div id="banner"></div>
+      </div>
+      <div class="panel">
+        <h3>Head-to-head <span class="x" data-pop="pairwise" style="font-size:12px">(majority graph)</span></h3>
+        <p class="psub">An arrow A → B means a majority prefers A to B (the number is the margin). One
+        candidate beating everyone is the Condorcet winner; a loop is the paradox — no winner.</p>
+        <canvas id="graphCanvas" height="300"></canvas>
+      </div>
+      <div class="panel" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted)">Mode</span>
+        <div class="mode"><button id="modePlay" class="on">Scenarios</button><button id="modeLive">Live · Python</button></div>
+        <button id="runLive" class="primary" style="display:none">Run live ▶</button>
+      </div>
+    </div>
+
+    <div class="col-right">
+      <div class="panel">
+        <h3>The electorate</h3>
+        <p class="psub">Each column is a bloc of voters sharing one ranking, first choice at the top.</p>
+        <div class="electorate" id="electorate"></div>
+      </div>
+      <div class="panel">
+        <h3>Tallies</h3>
+        <p class="psub">First-place votes (what plurality counts) vs Borda points — normalised. Different
+        rules reward different things.</p>
+        <canvas id="tallyCanvas" height="190"></canvas>
+        <div style="display:flex;gap:14px;margin-top:8px;font-size:11.5px;color:var(--muted);font-family:var(--mono)">
+          <span>▮ first-place</span><span>▯ Borda</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Live exploration</h3>
+        <p class="psub">Switch Mode (lower left) to <b>Live · Python</b> for a three-candidate (A, B, C)
+        sandbox, then rebalance the three cyclic blocs — the winners, and the cycle, shift live.</p>
+        <div id="liveCtls" style="opacity:.5">
+          <div class="ctl" style="margin-bottom:10px"><label>A&gt;B&gt;C · <span id="v0v">35</span></label><input id="b0" type="range" min="0" max="60" value="35" disabled style="width:100%;accent-color:var(--accent)"></div>
+          <div class="ctl" style="margin-bottom:10px"><label>B&gt;C&gt;A · <span id="v1v">33</span></label><input id="b1" type="range" min="0" max="60" value="33" disabled style="width:100%;accent-color:var(--accent)"></div>
+          <div class="ctl"><label>C&gt;A&gt;B · <span id="v2v">32</span></label><input id="b2" type="range" min="0" max="60" value="32" disabled style="width:100%;accent-color:var(--accent)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="notice">
+    <h2 class="notice-title">Things to notice</h2>
+    <div class="notice-grid">
+      <div class="ncard">
+        <h3>The spoiler effect</h3>
+        <p>A candidate who can't win still changes who does, by splitting a bloc. Plurality is uniquely
+        vulnerable; ranked methods recover the majority's real preference.</p>
+        <span class="x why" data-pop="spoiler">How vote-splitting works</span>
+      </div>
+      <div class="ncard">
+        <h3>Majorities can cycle</h3>
+        <p>A beats B, B beats C, and C beats A — all by majority. Collective preference need not be
+        consistent, even when every voter is. There may be no Condorcet winner.</p>
+        <span class="x why" data-pop="paradox">The Condorcet paradox</span>
+      </div>
+      <div class="ncard">
+        <h3>No perfect rule</h3>
+        <p>It isn't that one method is simply right. Arrow's theorem proves no ranked rule can satisfy a
+        few basic fairness axioms at once — trade-offs are unavoidable.</p>
+        <span class="x why" data-pop="arrow">Arrow's theorem</span>
+      </div>
+      <div class="ncard">
+        <h3>The rule is the choice</h3>
+        <p>Load "All four rules disagree": one electorate, four legitimate winners. Choosing the voting
+        method is itself a political decision, made before any vote is cast.</p>
+        <span class="x why" data-pop="choice">Why it matters</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="pop" role="tooltip"></div>
+
+<script>
+const C=k=>getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+const CAND={A:C('--A'),B:C('--B'),C:C('--C'),D:C('--D')};
+const RULES=[['plurality','Plurality','most 1st-place'],['borda','Borda','points by rank'],
+             ['irv','Instant-runoff','eliminate &amp; transfer'],['condorcet','Condorcet','beats all head-to-head']];
+let dataset=null, ev=null, mode='play';
+let pyodide=null, pyReady=false, liveTimer=null;
+const $=id=>document.getElementById(id);
+
+async function loadData(){
+  dataset=await (await fetch('../data/voting.json')).json();
+  const sel=$('scenario'); sel.innerHTML='';
+  dataset.scenarios.forEach((s,i)=>sel.add(new Option(s.label,i)));
+  sel.value=0; showScenario(0);
+}
+function showScenario(i){
+  const s=dataset.scenarios[i];
+  $('blurb').innerHTML='<b>'+s.label+'.</b> '+s.blurb;
+  ev=s.evaluation; render();
+}
+
+function chip(c,lg){return `<span class="chip${lg?' lg':''}" style="background:${CAND[c]}">${c}</span>`;}
+
+function render(){
+  if(!ev) return;
+  renderResults(); renderElectorate(); drawGraph(); drawTally();
+}
+
+function renderResults(){
+  const r=ev.results, host=$('results'); host.innerHTML='';
+  for(const [key,name,sub] of RULES){
+    const res=r[key]; let winHTML, detail='';
+    if(key==='condorcet'){
+      winHTML = res.winner ? chip(res.winner,true) : `<span class="nochip">none — cycle</span>`;
+      detail = res.winner ? 'beats every rival' : 'majorities cycle';
+    }else if(key==='plurality'){ winHTML=chip(res.winner,true);
+      detail=ev.candidates.map(c=>c+':'+res.counts[c]).join('  ');
+    }else if(key==='borda'){ winHTML=chip(res.winner,true);
+      detail=ev.candidates.map(c=>c+':'+res.scores[c]).join('  ');
+    }else if(key==='irv'){ winHTML=chip(res.winner,true);
+      const elim=res.rounds.filter(rd=>rd.eliminated).map(rd=>rd.eliminated);
+      detail = elim.length ? 'out: '+elim.join(' → ') : 'majority in round 1';
+    }
+    host.insertAdjacentHTML('beforeend',
+      `<div class="rrow"><div class="rule">${name}<small>${sub}</small></div>${winHTML}<div class="detail">${detail}</div></div>`);
+  }
+  const b=$('banner'), cyc=ev.results.condorcet.cycle, n=ev.distinctWinners;
+  if(cyc){
+    const others=[...new Set([ev.results.plurality.winner,ev.results.borda.winner,ev.results.irv.winner])];
+    const agree=others.length===1?` — plurality, Borda & IRV all pick ${others[0]}`:'';
+    b.innerHTML=`<div class="banner dis">⚠ no Condorcet winner — the majority cycles${agree}</div>`;
+  } else if(n===1) b.innerHTML=`<div class="banner agree">✓ all four rules agree</div>`;
+  else b.innerHTML=`<div class="banner dis">⚠ ${n} different winners from the same ballots</div>`;
+}
+
+function renderElectorate(){
+  const host=$('electorate'); host.innerHTML='';
+  const maxc=Math.max(...ev.blocs.map(b=>b.count));
+  for(const bl of ev.blocs){
+    const chips=bl.ranking.map(c=>chip(c)).join('');
+    host.insertAdjacentHTML('beforeend',
+      `<div class="bloc"><div class="sz">${bl.pct}%</div>
+       <div class="szbar" style="width:${Math.round(70*bl.count/maxc)}%"></div>
+       <div class="rk">${bl.count} voters</div><div class="stack">${chips}</div></div>`);
+  }
+}
+
+function fit(cv){const dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=parseInt(cv.getAttribute('height'));
+  cv.width=w*dpr;cv.height=h*dpr;const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return{ctx,w,h};}
+
+function drawGraph(){
+  const {ctx,w,h}=fit($('graphCanvas'));
+  ctx.clearRect(0,0,w,h);
+  const cands=ev.candidates, n=cands.length, R=Math.min(w,h)/2-46, cx=w/2, cy=h/2, nr=20;
+  const pos={};
+  cands.forEach((c,i)=>{ const a=-Math.PI/2+i*2*Math.PI/n; pos[c]={x:cx+R*Math.cos(a),y:cy+R*Math.sin(a)}; });
+  const cw=ev.results.condorcet.winner, cycle=ev.results.condorcet.cycle;
+  // edges (winner -> loser)
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
+    const a=cands[i],b=cands[j],mar=ev.pairwise[a][b];
+    const [from,to]=mar>0?[a,b]:[b,a], mag=Math.abs(mar);
+    let col='rgba(150,160,185,0.55)';
+    if(cycle && n===3) col='rgba(255,143,143,0.85)';
+    else if(cw && from===cw) col='rgba(154,240,200,0.9)';
+    drawArrow(ctx,pos[from],pos[to],nr,col,mag);
+  }
+  // nodes
+  cands.forEach(c=>{
+    const p=pos[c];
+    if(c===cw){ ctx.strokeStyle=C('--good');ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,nr+5,0,7);ctx.stroke(); }
+    ctx.fillStyle=CAND[c];ctx.beginPath();ctx.arc(p.x,p.y,nr,0,7);ctx.fill();
+    ctx.fillStyle='#0a0a0f';ctx.font='700 17px '+C('--mono');ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(c,p.x,p.y+1);
+  });
+  ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  ctx.fillStyle=cycle?C('--bad'):C('--good');ctx.font='12px '+C('--mono');
+  ctx.fillText(cycle?'cycle — no Condorcet winner':(cw?('Condorcet winner: '+cw):''),14,h-12);
+}
+function drawArrow(ctx,p,q,nr,col,label){
+  const dx=q.x-p.x,dy=q.y-p.y,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L;
+  const x1=p.x+ux*nr,y1=p.y+uy*nr,x2=q.x-ux*(nr+9),y2=q.y-uy*(nr+9);
+  ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  // arrowhead
+  const ah=9,aw=5,bx=q.x-ux*nr,by=q.y-uy*nr;
+  ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(bx,by);
+  ctx.lineTo(bx-ux*ah-uy*aw,by-uy*ah+ux*aw);ctx.lineTo(bx-ux*ah+uy*aw,by-uy*ah-ux*aw);ctx.closePath();ctx.fill();
+  // margin label
+  const mx=(x1+x2)/2-uy*10,my=(y1+y2)/2+ux*10;
+  ctx.fillStyle=C('--muted');ctx.font='10px '+C('--mono');ctx.textAlign='center';
+  ctx.fillText('+'+label,mx,my);ctx.textAlign='left';
+}
+
+function drawTally(){
+  const {ctx,w,h}=fit($('tallyCanvas'));
+  ctx.clearRect(0,0,w,h);
+  const cands=ev.candidates, n=cands.length;
+  const pc=ev.results.plurality.counts, bs=ev.results.borda.scores;
+  const maxp=Math.max(1,...cands.map(c=>pc[c])), maxb=Math.max(1,...cands.map(c=>bs[c]));
+  const pad={l:12,r:10,t:14,b:24}, gw=(w-pad.l-pad.r)/n;
+  const Y=v=>h-pad.b-(h-pad.t-pad.b)*v;
+  ctx.font='10px '+C('--mono');ctx.textAlign='center';
+  cands.forEach((c,i)=>{
+    const cx=pad.l+gw*i+gw*0.5, bw=gw*0.26;
+    const pv=pc[c]/maxp, bv=bs[c]/maxb;
+    ctx.fillStyle=CAND[c]; ctx.fillRect(cx-bw-2,Y(pv),bw,(h-pad.b)-Y(pv));     // first-place solid
+    ctx.strokeStyle=CAND[c];ctx.lineWidth=1.4;ctx.strokeRect(cx+2,Y(bv),bw,(h-pad.b)-Y(bv)); // borda outline
+    ctx.fillStyle=C('--muted');ctx.fillText(c,cx,h-pad.b+13);
+  });
+  ctx.textAlign='left';
+}
+
+
+// ---- live (Pyodide) ----
+const CORE_FILES=['__init__.py','domain.py','model.py','agents.py','analysis.py','protocol.py','domains.py','auctions.py','voting.py','voting_scenarios.py'];
+async function ensurePyodide(){
+  if(pyReady) return;
+  if(!window.loadPyodide){ await new Promise((res,rej)=>{const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);}); }
+  pyodide=await loadPyodide();
+  await pyodide.runPythonAsync(`import os\nos.makedirs('core',exist_ok=True)`);
+  for(const f of CORE_FILES){ const txt=await (await fetch('../core/'+f)).text(); pyodide.FS.writeFile('core/'+f,txt); }
+  pyReady=true;
+}
+async function runLive(){
+  const btn=$('runLive');
+  try{
+    btn.disabled=true; if(!pyReady) btn.textContent='Loading Python…';
+    await ensurePyodide(); btn.textContent='Run live ▶';
+    const c0=+$('b0').value,c1=+$('b1').value,c2=+$('b2').value;
+    const js=await pyodide.runPythonAsync(`
+import json
+from core.voting import evaluate
+from core.voting_scenarios import LIVE_RANKINGS, LIVE_CANDIDATES
+profile=[(c,r) for c,r in zip([${c0},${c1},${c2}], LIVE_RANKINGS) if c>0]
+json.dumps(evaluate(profile, LIVE_CANDIDATES))
+`);
+    ev=JSON.parse(js);
+    $('blurb').innerHTML='<b>Live.</b> Move the three sliders to rebalance the electorate and watch the winners — and the cycle — appear and vanish.';
+    render();
+  }catch(e){ console.error(e); }
+  finally{ btn.disabled=false; }
+}
+function liveSlide(){
+  $('v0v').textContent=$('b0').value;$('v1v').textContent=$('b1').value;$('v2v').textContent=$('b2').value;
+  if(pyReady){ clearTimeout(liveTimer); liveTimer=setTimeout(runLive,120); }
+}
+
+$('scenario').onchange=()=>setMode('play');
+$('runLive').onclick=runLive;
+['b0','b1','b2'].forEach(id=>$(id).oninput=liveSlide);
+$('modePlay').onclick=()=>setMode('play');
+$('modeLive').onclick=()=>setMode('live');
+window.addEventListener('resize',()=>{ if(ev) { drawGraph(); drawTally(); } });
+function clearLive(){
+  ev=null;
+  $('results').innerHTML=''; $('banner').innerHTML=''; $('electorate').innerHTML='';
+  ['graphCanvas','tallyCanvas'].forEach(id=>{ const cv=$(id),x=cv.getContext('2d');
+    x.setTransform(1,0,0,1,0,0); x.clearRect(0,0,cv.width,cv.height); });
+}
+function setMode(m){
+  mode=m;
+  $('modePlay').classList.toggle('on',m==='play'); $('modeLive').classList.toggle('on',m==='live');
+  ['b0','b1','b2'].forEach(id=>$(id).disabled = m!=='live');
+  $('liveCtls').style.opacity = m==='live'?'1':'0.5';
+  $('runLive').style.display=m==='live'?'inline-block':'none';
+  if(m==='play'){ showScenario(+$('scenario').value); }
+  else if(pyReady){ runLive(); }            // already loaded — render the live profile now
+  else { clearLive(); $('blurb').innerHTML='<b>Live · Python.</b> A three-candidate (A, B, C) sandbox for the Condorcet cycle. Press <b>Run live ▶</b> to compute, then move the sliders to make the cycle appear and vanish.'; }
+}
+loadData();
+
+// ---- popovers ----
+const POP={
+  borda:{title:'The Borda count',html:`
+    <p>Every ballot awards points by rank: with m candidates, your 1st choice gets <b>m−1</b>, your
+    2nd gets m−2, down to <b>0</b> for last. The highest total wins.</p>
+    <p class="muted">It rewards broad acceptability — a candidate ranked 2nd by everyone can beat one
+    ranked 1st by a slim plurality but last by the rest.</p>`},
+  irv:{title:'Instant-runoff (ranked-choice)',html:`
+    <p>Count everyone's first choice. If no one has a majority, <b>eliminate</b> the candidate with the
+    fewest, transfer their ballots to the next choice on each, and repeat.</p>
+    <p class="muted">Used in real elections (Australia, Ireland, US cities). It resists spoilers — but
+    can behave non-monotonically, where gaining support costs you the win.</p>`},
+  condorcet:{title:'The Condorcet method',html:`
+    <p>Compare every pair head-to-head. The <b>Condorcet winner</b> is the candidate who would beat each
+    rival one-on-one by majority. Hard to argue against — when it exists.</p>
+    <p class="muted">The catch: it often doesn't exist, because majorities can cycle.</p>`},
+  paradox:{title:'The Condorcet paradox',html:`
+    <p>Take 35% A&gt;B&gt;C, 33% B&gt;C&gt;A, 32% C&gt;A&gt;B. A majority prefers <b>A to B</b>, another
+    prefers <b>B to C</b>, and yet another prefers <b>C to A</b>.</p>
+    <p class="muted">The pairwise graph is a loop with no source — group preference is intransitive even
+    though every individual is perfectly rational. Condorcet, 1785.</p>`},
+  pairwise:{title:'The majority graph',html:`
+    <p>One node per candidate; an arrow <b>A → B</b> means more voters rank A above B than below. The
+    number is the margin of victory.</p>
+    <p class="muted">A node with arrows to all others is the Condorcet winner. A directed loop is the
+    paradox.</p>`},
+  spoiler:{title:'The spoiler effect',html:`
+    <p>A trailing candidate splits a bloc that would otherwise unite behind one front-runner, flipping
+    the plurality result to a candidate the majority actually ranks lower.</p>
+    <p class="muted">Remove the spoiler and the "wrong" winner loses. This is the central case against
+    plurality voting — and the reason ranked methods exist.</p>`},
+  arrow:{title:"Arrow's impossibility theorem",html:`
+    <p>Kenneth Arrow (1951) proved that <b>no</b> ranked voting rule can simultaneously satisfy a short
+    list of reasonable fairness conditions (unanimity, no dictator, and independence of irrelevant
+    alternatives) once there are three or more candidates.</p>
+    <p class="muted">So the disagreements here aren't fixable by a cleverer rule — some trade-off is
+    mathematically unavoidable.</p>`},
+  choice:{title:'Choosing the rule is political',html:`
+    <p>When the same ballots yield four legitimate winners, <b>picking the method decides the outcome</b>
+    as surely as the votes do — and that choice is made by whoever designs the system.</p>
+    <p class="muted">Plurality favours the largest faction; Borda the broadly liked; Condorcet the
+    consensus beater; IRV the one who survives elimination. None is neutral.</p>`},
+};
+(function(){
+  const pop=$('pop'); let pinned=null;
+  function show(el){ const d=POP[el.dataset.pop]; if(!d) return;
+    pop.innerHTML='<h4>'+d.title+'</h4>'+d.html; pop.classList.add('show');
+    const r=el.getBoundingClientRect(),p=pop.getBoundingClientRect(),m=10;
+    let left=Math.max(m,Math.min(r.left+r.width/2-p.width/2,innerWidth-p.width-m));
+    let top=r.top-p.height-10; if(top<m) top=r.bottom+10;
+    pop.style.left=left+'px';pop.style.top=top+'px'; }
+  function hide(){ pop.classList.remove('show'); }
+  document.querySelectorAll('.x').forEach(el=>{
+    el.tabIndex=0; el.setAttribute('role','button');
+    el.addEventListener('mouseenter',()=>{ if(!pinned) show(el); });
+    el.addEventListener('mouseleave',()=>{ if(!pinned) hide(); });
+    el.addEventListener('focus',()=>{ if(!pinned) show(el); });
+    el.addEventListener('blur',()=>{ if(!pinned) hide(); });
+    el.addEventListener('click',e=>{ e.stopPropagation(); if(pinned===el){pinned=null;hide();}else{pinned=el;show(el);} });
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();} });
+  });
+  pop.addEventListener('click',e=>e.stopPropagation());
+  document.addEventListener('click',()=>{ if(pinned){pinned=null;hide();} });
+  addEventListener('keydown',e=>{ if(e.key==='Escape'&&pinned){pinned=null;hide();} });
+  addEventListener('scroll',()=>{ if(pinned) show(pinned); },true);
+})();
+</script>
+</body>
+</html>
