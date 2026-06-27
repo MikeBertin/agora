@@ -206,7 +206,7 @@ function selectInstance(i){
   $('pSlider').value=inst.params.p; $('pVal').textContent=inst.params.p.toFixed(2);
   useRuns();
 }
-function useRuns(){ frames=inst.runs[algo]; idx=0; $('scrub').max=frames.length-1; $('scrub').value=0; seek(0); drawConv(); }
+function useRuns(){ frames=inst.runs[algo]; idx=0; $('scrub').max=frames.length-1; $('scrub').value=0; seek(0); drawConv(); startPlay(); }
 
 function seek(i){
   idx=Math.max(0,Math.min(i,frames.length-1));
@@ -215,17 +215,18 @@ function seek(i){
   $('tlabel').innerHTML=`round ${idx} · <b>${f.conflicts}</b> conflict${f.conflicts===1?'':'s'}`;
   drawGraph(); drawConv();
 }
-let raf=null;
-function tick(){ if(!playing) return;
-  seek(idx+1);
-  if(idx>=frames.length-1){ playing=false; $('playBtn').textContent='▶ Play'; return; }
-  setTimeout(()=>{ raf=requestAnimationFrame(tick); }, 220);
-}
-function togglePlay(){ if(!frames.length) return;
+let timer=null, gen=0;
+function stopPlay(){ playing=false; gen++; if(timer){clearTimeout(timer);timer=null;} $('playBtn').textContent='▶ Play'; }
+function startPlay(){ if(!frames.length) return;
+  gen++; const g=gen; if(timer){clearTimeout(timer);timer=null;}
   if(idx>=frames.length-1) seek(0);
-  playing=!playing; $('playBtn').textContent=playing?'❚❚ Pause':'▶ Play';
-  if(playing) raf=requestAnimationFrame(tick);
+  playing=true; $('playBtn').textContent='❚❚ Pause';
+  const step=()=>{ if(g!==gen||!playing) return;
+    if(idx>=frames.length-1){ stopPlay(); return; }
+    seek(idx+1); timer=setTimeout(step,220); };
+  timer=setTimeout(step,220);
 }
+function togglePlay(){ if(playing) stopPlay(); else startPlay(); }
 
 function fit(cv){const dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=parseInt(cv.getAttribute('height'));
   cv.width=w*dpr;cv.height=h*dpr;const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return{ctx,w,h};}
@@ -274,7 +275,7 @@ function drawConv(){
 
 function setAlgo(a){ algo=a;
   $('algoDsa').classList.toggle('on',a==='dsa'); $('algoMgm').classList.toggle('on',a==='mgm');
-  playing=false;$('playBtn').textContent='▶ Play'; useRuns();
+  useRuns();
 }
 
 // ---- live (Pyodide) ----
@@ -311,7 +312,7 @@ json.dumps({"id":"live","label":"Live","params":{"n":${pr.n},"radius":${pr.radiu
 $('instance').onchange=e=>{ if(mode!=='play') setMode('play'); selectInstance(+e.target.value); };
 $('algoDsa').onclick=()=>setAlgo('dsa'); $('algoMgm').onclick=()=>setAlgo('mgm');
 $('playBtn').onclick=togglePlay;
-$('scrub').oninput=e=>{ playing=false;$('playBtn').textContent='▶ Play'; seek(+e.target.value); };
+$('scrub').oninput=e=>{ stopPlay(); seek(+e.target.value); };
 $('kSlider').oninput=e=>$('kVal').textContent=e.target.value;
 $('pSlider').oninput=e=>$('pVal').textContent=(+e.target.value).toFixed(2);
 $('runLive').onclick=runLive;
