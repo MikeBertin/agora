@@ -29,7 +29,7 @@ INSTANCES = [
 
 def main() -> None:
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    out_dir = os.path.join(root, "web", "data")
+    out_dir = os.path.join(root, "docs", "data")
     os.makedirs(out_dir, exist_ok=True)
 
     instances = []
@@ -54,7 +54,7 @@ def main() -> None:
     with open(os.path.join(out_dir, "dcop.json"), "w") as f:
         json.dump({"instances": instances}, f, separators=(",", ":"))
 
-    web_core = os.path.join(root, "web", "core")
+    web_core = os.path.join(root, "docs", "core")
     shutil.rmtree(web_core, ignore_errors=True)
     shutil.copytree(os.path.join(root, "core"), web_core,
                     ignore=shutil.ignore_patterns("__pycache__"))

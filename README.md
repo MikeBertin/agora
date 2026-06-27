@@ -22,10 +22,10 @@ package (`core/`). The same code runs two ways:
 
 | | | |
 |---|---|---|
-| **[Negotiation](web/negotiation/)** | Bilateral bargaining | A candidate and an employer haggle over a five-issue job offer under a deadline. Watch the bidding dance against the exact Pareto frontier, the concession curves, and a frequency model learning the opponent's hidden priorities. **Built.** |
-| **[Auctions](web/auctions/)** | Mechanism design | English / Vickrey / first-price / Dutch auctions under independent private values; bid shading, the revenue-equivalence theorem converging live, and the same-mean/different-variance revenue distribution. **Built.** |
-| **[Voting](web/voting/)** | Social choice | Plurality, Borda, instant-runoff and Condorcet over curated profiles (spoiler, the Condorcet paradox, and a profile where all four rules disagree), with a live majority graph. **Built.** |
-| **[Distributed optimisation](web/dcop/)** | DCOP | Graph colouring as decentralised resource allocation: autonomous agents resolve conflicts with only local information via DSA and MGM. **Built.** |
+| **[Negotiation](docs/negotiation/)** | Bilateral bargaining | A candidate and an employer haggle over a five-issue job offer under a deadline. Watch the bidding dance against the exact Pareto frontier, the concession curves, and a frequency model learning the opponent's hidden priorities. **Built.** |
+| **[Auctions](docs/auctions/)** | Mechanism design | English / Vickrey / first-price / Dutch auctions under independent private values; bid shading, the revenue-equivalence theorem converging live, and the same-mean/different-variance revenue distribution. **Built.** |
+| **[Voting](docs/voting/)** | Social choice | Plurality, Borda, instant-runoff and Condorcet over curated profiles (spoiler, the Condorcet paradox, and a profile where all four rules disagree), with a live majority graph. **Built.** |
+| **[Distributed optimisation](docs/dcop/)** | DCOP | Graph colouring as decentralised resource allocation: autonomous agents resolve conflicts with only local information via DSA and MGM. **Built.** |
 
 ## The negotiation agents
 
@@ -61,9 +61,9 @@ core/                 # reusable pure-Python engine (no dependencies)
   voting.py           #   plurality / Borda / IRV / Condorcet + pairwise margins
   voting_scenarios.py #   curated profiles (spoiler, paradox, all-differ)
   dcop.py             #   graph colouring via DSA and MGM
-experiments/          # one runner per demo; each writes web/data/*.json
-  run.py  run_auctions.py  run_voting.py  run_dcop.py   # + mirror core/ into web/
-web/                  # static site (GitHub Pages)
+experiments/          # one runner per demo; each writes docs/data/*.json
+  run.py  run_auctions.py  run_voting.py  run_dcop.py   # + mirror core/ into docs/
+docs/                  # static site (served by GitHub Pages from /docs)
   index.html          #   landing
   negotiation/ auctions/ voting/ dcop/   # the demos (Canvas viz + Pyodide live)
   data/               #   precomputed traces + manifests
@@ -79,16 +79,16 @@ engine — multi-agent mechanism design is the foundation that work builds on.
 
 ## Running it
 
-The site is static — open `web/index.html`, or serve the folder:
+The site is static — open `docs/index.html`, or serve the folder:
 
 ```sh
-cd web && python3 -m http.server 8761
+cd docs && python3 -m http.server 8761
 ```
 
-Regenerate the precomputed traces (and refresh the in-browser engine copy):
+Regenerate the precomputed traces (and refresh the in-browser engine copy in `docs/core`):
 
 ```sh
-python3 experiments/run.py
+for r in run run_auctions run_voting run_dcop; do python3 experiments/$r.py; done
 ```
 
 Run the engine tests:

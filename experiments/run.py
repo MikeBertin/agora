@@ -37,7 +37,7 @@ SEED = 42
 
 def main() -> None:
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    out_dir = os.path.join(root, "web", "data")
+    out_dir = os.path.join(root, "docs", "data")
     os.makedirs(out_dir, exist_ok=True)
 
     domain, ua, ub = PROFILES["job-offer"]
@@ -72,7 +72,7 @@ def main() -> None:
 
     # Mirror the pure-Python engine into web/ so Pyodide can fetch it and the
     # site folder is self-contained for GitHub Pages.
-    web_core = os.path.join(root, "web", "core")
+    web_core = os.path.join(root, "docs", "core")
     shutil.rmtree(web_core, ignore_errors=True)
     shutil.copytree(os.path.join(root, "core"), web_core,
                     ignore=shutil.ignore_patterns("__pycache__"))

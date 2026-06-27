@@ -20,7 +20,7 @@ SEED = 42
 
 def main() -> None:
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    out_dir = os.path.join(root, "web", "data")
+    out_dir = os.path.join(root, "docs", "data")
     os.makedirs(out_dir, exist_ok=True)
 
     data = run_auctions(N_BIDDERS, N_AUCTIONS, SEED)
@@ -35,7 +35,7 @@ def main() -> None:
     print(f"  theoretical (n-1)/(n+1) = {s['theoreticalRevenue']}")
 
     # mirror the engine into web/ for Pyodide
-    web_core = os.path.join(root, "web", "core")
+    web_core = os.path.join(root, "docs", "core")
     shutil.rmtree(web_core, ignore_errors=True)
     shutil.copytree(os.path.join(root, "core"), web_core,
                     ignore=shutil.ignore_patterns("__pycache__"))
