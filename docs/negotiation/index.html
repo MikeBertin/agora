@@ -275,7 +275,11 @@ function togglePlay(){
 }
 
 function fitCanvas(cv){
-  const dpr=window.devicePixelRatio||1, w=cv.clientWidth, h=parseInt(cv.getAttribute('height'));
+  const dpr=window.devicePixelRatio||1, w=cv.clientWidth;
+  // Remember the logical height once: setting cv.height writes back to the
+  // `height` attribute, so reading it again would compound by dpr every frame.
+  const h=cv._h||(cv._h=parseInt(cv.getAttribute('height')));
+  cv.style.height=h+'px';            // pin the displayed height to the bitmap resolution
   cv.width=w*dpr; cv.height=h*dpr;
   const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
   return {ctx,w,h};

@@ -287,7 +287,11 @@ function renderElectorate(){
   }
 }
 
-function fit(cv){const dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=parseInt(cv.getAttribute('height'));
+function fit(cv){const dpr=window.devicePixelRatio||1,w=cv.clientWidth;
+  // Cache logical height once: setting cv.height writes back to the `height`
+  // attribute, so re-reading it would compound by dpr on every draw.
+  const h=cv._h||(cv._h=parseInt(cv.getAttribute('height')));
+  cv.style.height=h+'px';
   cv.width=w*dpr;cv.height=h*dpr;const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return{ctx,w,h};}
 
 function drawGraph(){
