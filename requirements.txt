@@ -1,0 +1,3 @@
+# Supply engine solver dependency (the central LP optimum + dual/shadow prices).
+# The core/ negotiation engine stays dependency-free; only supply/ needs this.
+scipy>=1.18
