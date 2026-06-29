@@ -7,6 +7,9 @@ from .model import Warehouse, Store, Lane, Network, Flow
 from .instances import SCENARIOS, BY_ID
 from .solve import solve_optimum
 from .market import solve_market
+from .greedy import solve_greedy
+from .analysis import evaluate, compare
 
 __all__ = ["Warehouse", "Store", "Lane", "Network", "Flow",
-           "SCENARIOS", "BY_ID", "solve_optimum", "solve_market"]
+           "SCENARIOS", "BY_ID", "solve_optimum", "solve_market",
+           "solve_greedy", "evaluate", "compare"]

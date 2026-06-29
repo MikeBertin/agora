@@ -74,6 +74,30 @@ def shortage() -> Network:
     return Network("Shortage & elastic demand", warehouses, stores, _lanes(costs))
 
 
+def myopia() -> Network:
+    """Greedy's blind spot: the single cheapest lane steals needed capacity.
+
+    The Hub is the only cheap way to reach the Remote store, but it is *also*
+    the single cheapest lane to the Easy store — which has a fine backup in the
+    Depot. A myopic dispatcher grabs that cheapest lane first, exhausts the Hub
+    on the Easy store, and is left shipping to the Remote store at 9×. Planning
+    ahead sends the Hub to the Remote store instead and halves the bill.
+    """
+    warehouses = [
+        Warehouse("W1", "Hub", 10, 0.25, 0.55),
+        Warehouse("W2", "Depot", 10, 0.80, 0.50),
+    ]
+    stores = [
+        Store("S1", "Easy store", 10, 0.50, 0.20),
+        Store("S2", "Remote store", 10, 0.18, 0.85),
+    ]
+    costs = {
+        ("W1", "S1"): 1, ("W1", "S2"): 2,
+        ("W2", "S1"): 3, ("W2", "S2"): 9,
+    }
+    return Network("Greedy's blind spot", warehouses, stores, _lanes(costs))
+
+
 SCENARIOS = [
     {
         "id": "regions",
@@ -100,6 +124,15 @@ SCENARIOS = [
                  "but far more valuable. Serve the right one and welfare is high — "
                  "grab the nearest and you leave money on the table.",
         "network": shortage(),
+    },
+    {
+        "id": "myopia",
+        "label": "Greedy's blind spot",
+        "blurb": "Both stores must be served. The Hub is cheapest of all to the "
+                 "Easy store — but the Easy store has a backup and the Remote one "
+                 "doesn't. Grab the cheapest lane and you pay 9× to reach the "
+                 "Remote store; plan ahead and the bill halves, 100 down to 50.",
+        "network": myopia(),
     },
 ]
 

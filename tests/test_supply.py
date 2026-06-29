@@ -9,7 +9,9 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from supply import BY_ID
-from supply.instances import bottleneck, regions, shortage
+from supply.analysis import compare, evaluate
+from supply.greedy import solve_greedy
+from supply.instances import bottleneck, myopia, regions, shortage
 from supply.market import solve_market
 from supply.solve import solve_optimum
 
@@ -130,10 +132,63 @@ def test_market_deterministic():
           solve_market(regions())["feasible"])
 
 
+def test_evaluate():
+    """evaluate() scores the optimum's own flow back to the same numbers."""
+    net = shortage()
+    opt = solve_optimum(net)
+    ev = evaluate(net, opt["flow"])
+    check("evaluate reproduces optimum cost", close(ev["cost"], opt["cost"]))
+    check("evaluate reproduces optimum welfare", close(ev["welfare"], opt["welfare"]))
+    check("evaluate reports % served", close(ev["pctServed"], 75.0))
+
+
+def test_greedy_ties_on_easy():
+    """Greedy matches the optimum when the instance is forgiving."""
+    for build in (regions, bottleneck):
+        net = build()
+        check(f"{net.name}: greedy ties the optimum cost",
+              close(solve_greedy(net)["cost"], solve_optimum(net)["cost"]))
+
+
+def test_greedy_gap_welfare():
+    """Shortage: myopia burns scarce supply on low-value demand."""
+    net = shortage()
+    g = solve_greedy(net)
+    check("greedy shortage welfare is 100 (vs optimum 140)", close(g["welfare"], 100))
+    check("greedy shortage cost is 60", close(g["cost"], 60))
+
+
+def test_greedy_gap_cost():
+    """Myopia: the cheapest single lane strands the store with no backup."""
+    net = myopia()
+    check("myopia optimum cost is 50", close(solve_optimum(net)["cost"], 50))
+    check("myopia greedy cost is 100 (twice the optimum)",
+          close(solve_greedy(net)["cost"], 100))
+
+
+def test_compare():
+    """The head-to-head: market is always optimal; greedy can fall behind."""
+    for build in (regions, bottleneck, shortage, myopia):
+        net = build()
+        c = compare(net)
+        check(f"{net.name}: compare reports three methods",
+              set(c["comparison"]) == {"optimum", "market", "greedy"})
+        check(f"{net.name}: market efficiency is 1.0",
+              close(c["comparison"]["market"]["efficiency"], 1.0))
+        check(f"{net.name}: optimum efficiency is 1.0",
+              close(c["comparison"]["optimum"]["efficiency"], 1.0))
+    eff = compare(myopia())["comparison"]["greedy"]["efficiency"]
+    check("myopia: greedy efficiency is 0.5", close(eff, 0.5))
+    eff_s = compare(shortage())["comparison"]["greedy"]["efficiency"]
+    check("shortage: greedy efficiency is ~0.714", close(eff_s, 0.7143))
+
+
 if __name__ == "__main__":
     for fn in [test_model, test_regions, test_bottleneck, test_shortage,
                test_market_matches_optimum, test_market_discovers_prices,
-               test_market_frames, test_market_deterministic]:
+               test_market_frames, test_market_deterministic,
+               test_evaluate, test_greedy_ties_on_easy, test_greedy_gap_welfare,
+               test_greedy_gap_cost, test_compare]:
         print(fn.__name__)
         fn()
     print("\nAll supply engine smoke tests passed.")
