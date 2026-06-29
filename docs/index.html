@@ -18,7 +18,7 @@
   :root{
     --bg:#0a0a0f; --panel:#13131c; --line:#23232f;
     --ink:#e7e7ef; --muted:#8a8a9c;
-    --neg:#7cc4ff; --auc:#ffc266; --vote:#5fd0c5; --dcop:#c79bff;
+    --neg:#7cc4ff; --auc:#ffc266; --vote:#5fd0c5; --dcop:#c79bff; --supply:#6fdc9b;
     --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box}
@@ -43,6 +43,7 @@
         transition:transform .15s ease,border-color .15s ease}
   .card.live:hover{transform:translateY(-3px)}
   .card.soon{opacity:.55}
+  .card.wide{grid-column:1/-1}
   .card h2{margin:0 0 4px;font-size:20px;display:flex;align-items:center;gap:10px}
   .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
   .card p{margin:8px 0 0;color:var(--muted);font-size:14px;line-height:1.55}
@@ -50,6 +51,7 @@
        color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 9px;margin-left:auto}
   .c-neg .dot{background:var(--neg)} .c-auc .dot{background:var(--auc)}
   .c-vote .dot{background:var(--vote)} .c-dcop .dot{background:var(--dcop)}
+  .c-supply .dot{background:var(--supply)}
   footer{margin-top:46px;color:var(--muted);font-size:13px;line-height:1.7}
   footer a{color:var(--neg);text-decoration:none}
   code{font-family:var(--mono);font-size:12.5px;background:#1a1a25;padding:1.5px 6px;border-radius:5px}
@@ -88,6 +90,13 @@
       <h2><span class="dot"></span>Distributed Optimisation<span class="tag">Live</span></h2>
       <p>DCOP: independent agents coordinate to optimise a shared objective under constraints — the
       multi-agent backbone of resource-allocation and scheduling engines.</p>
+    </a>
+    <a class="card live c-supply wide" href="supply/">
+      <h2><span class="dot"></span>Supply Allocation<span class="tag">Playback</span></h2>
+      <p>Where the auctions and optimisation threads meet: logistics supply as a transportation problem,
+      solved three ways — a central LP optimum, a decentralised market where demand bids for capacity, and
+      a greedy baseline — and measured on the efficiency gap. The market reaches the optimum and rediscovers
+      its prices by bidding.</p>
     </a>
   </div>
 

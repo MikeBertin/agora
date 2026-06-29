@@ -26,6 +26,7 @@ package (`core/`). The same code runs two ways:
 | **[Auctions](docs/auctions/)** | Mechanism design | English / Vickrey / first-price / Dutch auctions under independent private values; bid shading, the revenue-equivalence theorem converging live, and the same-mean/different-variance revenue distribution. **Built.** |
 | **[Voting](docs/voting/)** | Social choice | Plurality, Borda, instant-runoff and Condorcet over curated profiles (spoiler, the Condorcet paradox, and a profile where all four rules disagree), with a live majority graph. **Built.** |
 | **[Distributed optimisation](docs/dcop/)** | DCOP | Graph colouring as decentralised resource allocation: autonomous agents resolve conflicts with only local information via DSA and MGM. **Built.** |
+| **[Supply allocation](docs/supply/)** | Logistics / network flow | The transportation problem solved three ways — a central LP optimum, an auction-algorithm market where demand bids for capacity, and a greedy baseline — compared on cost, welfare and the efficiency gap. The market reaches the optimum *and* rediscovers its dual prices by bidding. **Built.** |
 
 ## The negotiation agents
 
@@ -61,21 +62,35 @@ core/                 # reusable pure-Python engine (no dependencies)
   voting.py           #   plurality / Borda / IRV / Condorcet + pairwise margins
   voting_scenarios.py #   curated profiles (spoiler, paradox, all-differ)
   dcop.py             #   graph colouring via DSA and MGM
+supply/               # logistics allocation engine (needs scipy; not in browser)
+  model.py            #   transportation network: warehouses, stores, lanes
+  instances.py        #   four hand-checkable logistics scenarios
+  solve.py            #   central LP optimum + dual shadow prices (scipy/HiGHS)
+  market.py           #   auction algorithm -> allocation + clearing prices
+  greedy.py           #   myopic cheapest-lane baseline
+  analysis.py         #   score any flow + three-way efficiency comparison
 experiments/          # one runner per demo; each writes docs/data/*.json
   run.py  run_auctions.py  run_voting.py  run_dcop.py   # + mirror core/ into docs/
+  run_supply.py       # writes docs/data/supply.json (playback-only; needs venv)
 docs/                  # static site (served by GitHub Pages from /docs)
   index.html          #   landing
   negotiation/ auctions/ voting/ dcop/   # the demos (Canvas viz + Pyodide live)
+  supply/             #   supply demo (Canvas viz, precomputed playback)
   data/               #   precomputed traces + manifests
   core/               #   copy of the engine, fetched by Pyodide
 tests/test_core.py    # engine smoke tests (37 checks)
+tests/test_supply.py  # supply engine smoke tests (needs venv; 66 checks)
 ```
 
-The Python core is deliberately dependency-free and small enough that exact
+The `core/` engine is deliberately dependency-free and small enough that exact
 results are computed, not approximated (the negotiation outcome space and the
-auction equilibria are enumerated/closed-form). The `auctions` and `dcop`
-modules are intended to be lifted into a resource-allocation / supply-optimisation
-engine — multi-agent mechanism design is the foundation that work builds on.
+auction equilibria are enumerated/closed-form). The `supply/` package is where
+the `auctions` (mechanism design) and `dcop` (decentralised allocation) threads
+are carried forward into a real resource-allocation engine: it solves the
+logistics transportation problem as a central LP, as a decentralised auction
+market, and greedily — then measures the efficiency gap between them. It is the
+one engine that needs a third-party solver (scipy), so unlike the other four it
+runs offline only, not live in the browser.
 
 ## Running it
 
@@ -91,10 +106,18 @@ Regenerate the precomputed traces (and refresh the in-browser engine copy in `do
 for r in run run_auctions run_voting run_dcop; do python3 experiments/$r.py; done
 ```
 
-Run the engine tests:
+The supply engine is the exception — it needs scipy, so set up a venv first:
+
+```sh
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python experiments/run_supply.py      # writes docs/data/supply.json
+```
+
+Run the engine tests (supply needs the venv):
 
 ```sh
 python3 tests/test_core.py
+.venv/bin/python tests/test_supply.py
 ```
 
 ## Notes
