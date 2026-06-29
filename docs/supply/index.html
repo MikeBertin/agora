@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agora — Supply Allocation</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="Agora — Supply Allocation">
+<meta property="og:image" content="https://mikebertin.github.io/agora/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://mikebertin.github.io/agora/og.png">
+<meta name="description" content="Logistics supply allocation as a transportation problem, solved three ways — a central LP optimum, a decentralised auction-algorithm market, and a greedy baseline — compared on cost, welfare and the efficiency gap.">
+<style>
+  :root{
+    --bg:#0a0a0f; --panel:#13131c; --line:#23232f; --line2:#2c2c3a;
+    --ink:#e7e7ef; --muted:#8a8a9c; --accent:#6fdc9b;
+    --wh:#7cc4ff; --store:#ffc266; --flow:#6fdc9b; --bad:#ff6b6b;
+    --optC:#6fdc9b; --mktC:#7cc4ff; --grdC:#ffb259;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:radial-gradient(1100px 700px at 50% -10%,#16161f,#0a0a0f 60%);
+    color:var(--ink);min-height:100vh;
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  .page{max-width:1120px;margin:0 auto;padding:36px 24px 56px}
+  a.back{color:var(--muted);text-decoration:none;font-size:13px;font-family:var(--mono)}
+  a.back:hover{color:var(--ink)}
+  .hero{margin:12px 0 20px}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.4px}
+  .sub{color:var(--muted);font-size:14px;line-height:1.6;max-width:800px;margin:0}
+  .sub b{color:var(--ink);font-weight:600}
+
+  .controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin-bottom:18px}
+  .ctl{display:flex;flex-direction:column;gap:5px}
+  .ctl label{font-family:var(--mono);font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted)}
+  select,button{font:inherit;font-size:13.5px;color:var(--ink);background:#1a1a25;
+    border:1px solid var(--line2);border-radius:8px;padding:7px 10px}
+  select{min-width:210px}
+  button{cursor:pointer} button:hover{border-color:#3a3a4d}
+  button:disabled{opacity:.45;cursor:default}
+  .mode{display:flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+  .mode button{border:0;border-radius:0;background:#15151e;padding:7px 13px}
+  .mode button.on{background:#24402f;color:#cdf6df}
+
+  .cols{display:flex;gap:18px;align-items:flex-start}
+  @media(max-width:900px){.cols{flex-direction:column}}
+  .col-left{flex:1 1 560px;min-width:0;display:flex;flex-direction:column;gap:14px}
+  .col-right{flex:0 0 372px;display:flex;flex-direction:column;gap:14px}
+  @media(max-width:900px){.col-right{flex:1 1 auto;width:100%}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 14px 12px}
+  .panel h3{margin:0 0 2px;font-size:14.5px}
+  .panel .psub{margin:0 0 10px;color:var(--muted);font-size:12px;line-height:1.45}
+  canvas{width:100%;display:block;border-radius:6px}
+  .legend{display:flex;flex-wrap:wrap;gap:13px;margin-top:8px;font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .sw.circ{border-radius:50%}
+
+  .cap{margin:9px 0 0;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  .cap b{color:var(--ink)}
+
+  .transport{display:flex;align-items:center;gap:13px;margin-top:10px}
+  .transport input[type=range]{flex:1;accent-color:var(--accent)}
+  .transport button{padding:6px 11px}
+  .tlabel{font-family:var(--mono);font-size:11.5px;color:var(--muted);min-width:120px;text-align:right}
+  .tlabel b{color:var(--ink)}
+
+  /* scorecard */
+  .score{display:flex;flex-direction:column;gap:9px}
+  .srow{border:1px solid var(--line2);border-radius:9px;padding:9px 11px;cursor:pointer;background:#15151e;transition:border-color .12s,background .12s}
+  .srow:hover{border-color:#3a3a4d}
+  .srow.on{background:#1b2420;border-color:#2f5a42}
+  .srow .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .srow .nm{font-size:13.5px;font-weight:600}
+  .srow .nm i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:6px}
+  .srow .val{font-family:var(--mono);font-size:13px}
+  .bar{height:7px;border-radius:4px;background:#0e0e16;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:4px}
+  .srow .effx{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:5px;text-align:right}
+
+  /* prices table */
+  .ptab{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+  .ptab th{text-align:left;color:var(--muted);font-weight:500;font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;padding:0 0 6px}
+  .ptab td{padding:3px 0;border-top:1px solid var(--line)}
+  .ptab td.r{text-align:right}
+  .ptab .nm{color:var(--ink)}
+  .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:10px;background:#1d2a3a;color:#9fd0ff;margin-left:5px}
+
+  .notice{margin-top:30px;border-top:1px solid var(--line);padding-top:22px}
+  .notice-title{font-size:12px;text-transform:uppercase;letter-spacing:1.6px;color:var(--muted);margin:0 0 14px;font-weight:600}
+  .notice-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:900px){.notice-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.notice-grid{grid-template-columns:1fr}}
+  .ncard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+  .ncard h3{margin:0 0 7px;font-size:14px;font-weight:600}
+  .ncard p{margin:0 0 11px;color:var(--muted);font-size:12.5px;line-height:1.5}
+
+  .x{color:var(--accent);border-bottom:1px dotted currentColor;cursor:help;white-space:nowrap}
+  .x::after{content:'ⓘ';font-size:.7em;vertical-align:.35em;margin-left:1px;opacity:.7}
+  .x:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+  .x.why{white-space:normal;font-size:12.5px;font-weight:600}
+  #pop{position:fixed;z-index:60;max-width:320px;background:#15151f;border:1px solid #2e2e3e;
+    border-radius:12px;padding:13px 15px;box-shadow:0 22px 55px -16px #000,0 0 0 1px #000;
+    font-size:13px;line-height:1.55;visibility:hidden;opacity:0;transform:translateY(4px);
+    pointer-events:none;transition:opacity .13s,transform .13s}
+  #pop.show{visibility:visible;opacity:1;transform:none;pointer-events:auto}
+  #pop h4{margin:0 0 7px;font-size:13.5px;color:var(--accent)}
+  #pop p{margin:0 0 8px}#pop p:last-child{margin:0}
+  #pop b{color:var(--ink);font-weight:600}
+  #pop .muted{color:var(--muted);font-size:12px}
+  #pop .eq{font-family:var(--mono);background:#0e0e16;border:1px solid var(--line);border-radius:7px;
+    padding:8px 10px;margin:9px 0;font-size:12.5px;text-align:center;color:#e6ffef}
+</style>
+</head>
+<body>
+<div class="page">
+  <a class="back" href="../">&larr; Agora</a>
+  <header class="hero">
+    <h1>Supply Allocation</h1>
+    <p class="sub">Warehouses hold a limited supply; stores want it; every lane has a shipping cost. Deciding
+    what flows where is the <span class="x" data-pop="transportation">transportation problem</span> — and the
+    same instance can be solved three ways. A central <b>optimum</b> (one linear program), a decentralised
+    <b>market</b> where units of demand <span class="x" data-pop="auction">bid</span> for capacity, and a
+    <b>greedy</b> baseline that just grabs the cheapest lane. Watch how close the market and greedy get to the
+    planner's optimum — the <span class="x" data-pop="gap">efficiency gap</span>.</p>
+  </header>
+
+  <div class="controls">
+    <div class="ctl"><label for="scenario">Scenario</label><select id="scenario"></select></div>
+    <div class="ctl"><label>Allocation</label>
+      <div class="mode">
+        <button id="mOpt" class="on" data-m="optimum">Optimum</button>
+        <button id="mMkt" data-m="market">Market</button>
+        <button id="mGrd" data-m="greedy">Greedy</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="col-left">
+      <div class="panel">
+        <h3>The shipping network</h3>
+        <p class="psub"><b style="color:var(--wh)">Warehouses</b> (squares, filled by how much capacity is
+        used) ship to <b style="color:var(--store)">stores</b> (circles, filled by how much demand is met).
+        Lane thickness is the units shipped; a <b style="color:var(--bad)">red ring</b> is unmet demand.</p>
+        <canvas id="mapCanvas" height="430"></canvas>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--wh)"></i>warehouse</span>
+          <span><i class="sw circ" style="background:var(--store)"></i>store</span>
+          <span><i class="sw" style="background:var(--flow)"></i>flow</span>
+          <span><i class="sw circ" style="border:2px solid var(--bad);background:transparent"></i>unserved</span>
+        </div>
+        <p class="cap" id="mapCap"></p>
+      </div>
+    </div>
+
+    <div class="col-right">
+      <div class="panel">
+        <h3>Scorecard</h3>
+        <p class="psub">Each method's result, and its <span class="x" data-pop="efficiency">efficiency</span>
+        against the optimum. Click a row to show it on the map.</p>
+        <div class="score" id="score"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Prices &amp; rents</h3>
+        <p class="psub">The optimum's <span class="x" data-pop="shadowprice">shadow prices</span> per store and
+        <span class="x" data-pop="rent">capacity rents</span> per warehouse — and the price the
+        <b style="color:var(--mktC)">market</b> discovers by bidding.</p>
+        <table class="ptab" id="prices"></table>
+      </div>
+
+      <div class="panel">
+        <h3 id="procTitle">Price discovery</h3>
+        <p class="psub" id="procSub">The market is an <span class="x" data-pop="auction">auction</span>: units
+        of demand bid for capacity and prices climb until they hit the warehouses' rents — the same numbers the
+        LP found.</p>
+        <canvas id="procCanvas" height="190"></canvas>
+        <div class="transport">
+          <button id="playBtn">▶ Play</button>
+          <input id="scrub" type="range" min="0" max="0" value="0">
+          <div class="tlabel" id="tlabel"></div>
+        </div>
+        <div class="legend" id="procLegend"></div>
+      </div>
+    </div>
+  </div>
+
+  <section class="notice">
+    <h2 class="notice-title">Things to notice</h2>
+    <div class="notice-grid">
+      <div class="ncard">
+        <h3>The market is optimal</h3>
+        <p>Nobody plans the whole network, yet bidding lands on the exact same cost and allocation as the
+        central LP — and rediscovers its prices along the way.</p>
+        <span class="x why" data-pop="auction">How bidding allocates</span>
+      </div>
+      <div class="ncard">
+        <h3>Prices are the duals</h3>
+        <p>The price the auction settles on for a warehouse is precisely its capacity <i>rent</i> from the
+        LP's dual — scarcity, discovered by the market instead of computed.</p>
+        <span class="x why" data-pop="rent">Capacity rent</span>
+      </div>
+      <div class="ncard">
+        <h3>Greedy's blind spot</h3>
+        <p>Grabbing the cheapest lane first can strand a store that had no backup, or burn scarce supply on
+        low-value demand — sometimes paying double.</p>
+        <span class="x why" data-pop="gap">The efficiency gap</span>
+      </div>
+      <div class="ncard">
+        <h3>When demand can go unmet</h3>
+        <p>With <span class="x" data-pop="elastic">elastic</span> demand, serving a unit only pays if its value
+        beats the delivered cost — so the optimum may leave the cheap-but-worthless demand unserved.</p>
+        <span class="x why" data-pop="welfare">Welfare, not just cost</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="pop" role="tooltip"></div>
+
+<script>
+const C=k=>getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+const $=id=>document.getElementById(id);
+const MCOL={optimum:'--optC',market:'--mktC',greedy:'--grdC'};
+const MLABEL={optimum:'Optimum',market:'Market',greedy:'Greedy'};
+let data=null, scen=null, method='optimum', frames=[], idx=0, playing=false;
+
+async function loadData(){
+  data=await (await fetch('../data/supply.json')).json();
+  const sel=$('scenario'); sel.innerHTML='';
+  data.scenarios.forEach((s,i)=>sel.add(new Option(s.label,i)));
+  sel.value=1; selectScenario(1);
+}
+function selectScenario(i){ scen=data.scenarios[i]; setMethod(method,true); drawScore(); drawPrices(); }
+
+function fit(cv){const dpr=window.devicePixelRatio||1,w=cv.clientWidth;
+  const h=cv._h||(cv._h=parseInt(cv.getAttribute('height')));
+  cv.style.height=h+'px';
+  cv.width=w*dpr;cv.height=h*dpr;const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return{ctx,w,h};}
+
+// ---- map ----
+function flowStats(m){
+  const f=scen.methods[m].flow, net=scen.network;
+  const served={}, used={};
+  net.stores.forEach(s=>served[s.id]=0); net.warehouses.forEach(w=>used[w.id]=0);
+  for(const key in f){ const [w,s]=key.split('->'); served[s]+=f[key]; used[w]+=f[key]; }
+  return {f,served,used,net};
+}
+function drawMap(){
+  const {ctx,w,h}=fit($('mapCanvas')); ctx.clearRect(0,0,w,h);
+  const {f,served,used,net}=flowStats(method);
+  const pad=46, X=x=>pad+(w-2*pad)*x, Y=y=>pad+(h-2*pad)*y;
+  const maxF=Math.max(1,...Object.values(f));
+  const byId={}; net.warehouses.forEach(o=>byId[o.id]=o); net.stores.forEach(o=>byId[o.id]=o);
+  // faint all lanes
+  net.lanes.forEach(l=>{ const a=byId[l.src],b=byId[l.dst];
+    ctx.strokeStyle='#26263180';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(X(a.x),Y(a.y));ctx.lineTo(X(b.x),Y(b.y));ctx.stroke(); });
+  // active flow lanes
+  for(const key in f){ const [ws,ss]=key.split('->'),a=byId[ws],b=byId[ss];
+    ctx.strokeStyle=C('--flow');ctx.globalAlpha=.85;ctx.lineWidth=1.5+6*f[key]/maxF;
+    ctx.beginPath();ctx.moveTo(X(a.x),Y(a.y));ctx.lineTo(X(b.x),Y(b.y));ctx.stroke();ctx.globalAlpha=1;
+    const mx=(X(a.x)+X(b.x))/2,my=(Y(a.y)+Y(b.y))/2;
+    ctx.fillStyle=C('--flow');ctx.font='10px '+C('--mono');ctx.textAlign='center';ctx.fillText(f[key],mx,my-4);
+  }
+  ctx.textAlign='center';
+  // warehouses (squares)
+  net.warehouses.forEach(o=>{ const x=X(o.x),y=Y(o.y),s=17,frac=used[o.id]/o.capacity;
+    ctx.fillStyle='#0e0e16';rr(ctx,x-s,y-s,2*s,2*s,5);ctx.fill();
+    ctx.fillStyle=C('--wh');rr(ctx,x-s,y+s-2*s*frac,2*s,2*s*frac,5);ctx.fill();
+    ctx.strokeStyle=C('--wh');ctx.lineWidth=1.6;rr(ctx,x-s,y-s,2*s,2*s,5);ctx.stroke();
+    ctx.fillStyle=C('--ink');ctx.font='600 11px '+C('--mono');ctx.fillText(o.name,x,y-s-7);
+    ctx.fillStyle=C('--muted');ctx.font='10px '+C('--mono');ctx.fillText(used[o.id]+'/'+o.capacity,x,y+s+15);
+  });
+  // stores (circles)
+  net.stores.forEach(o=>{ const x=X(o.x),y=Y(o.y),r=17,frac=served[o.id]/o.demand,un=o.demand-served[o.id];
+    ctx.fillStyle='#0e0e16';ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();
+    ctx.save();ctx.beginPath();ctx.rect(x-r,y+r-2*r*frac,2*r,2*r*frac);ctx.clip();
+    ctx.fillStyle=C('--store');ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.restore();
+    ctx.strokeStyle=un>1e-6?C('--bad'):C('--store');ctx.lineWidth=un>1e-6?2.6:1.6;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.stroke();
+    ctx.fillStyle=C('--ink');ctx.font='600 11px '+C('--mono');ctx.fillText(o.name,x,y-r-7);
+    ctx.fillStyle=C('--muted');ctx.font='10px '+C('--mono');
+    ctx.fillText(served[o.id]+'/'+o.demand+(o.value!=null?(' · £'+o.value):''),x,y+r+15);
+  });
+  // caption
+  const cmp=scen.comparison[method], obj=scen.objective;
+  const main=obj==='welfare'?('welfare <b>'+cmp.welfare+'</b>'):('cost <b>'+cmp.cost+'</b>');
+  $('mapCap').innerHTML=MLABEL[method]+': '+main+' · '+cmp.pctServed+'% served'
+    +(method!=='optimum'?(' · '+pct(cmp.efficiency)+' of optimum'):'');
+}
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+const pct=v=>Math.round(v*100)+'%';
+
+// ---- scorecard ----
+function drawScore(){
+  const el=$('score'); el.innerHTML=''; const obj=scen.objective, cmp=scen.comparison;
+  ['optimum','market','greedy'].forEach(m=>{
+    const r=cmp[m], col=C(MCOL[m]);
+    const val=obj==='welfare'?('welfare '+r.welfare):('cost '+r.cost);
+    const div=document.createElement('div'); div.className='srow'+(m===method?' on':''); div.dataset.m=m;
+    div.innerHTML=`<div class="top"><div class="nm" style="color:${col}">${MLABEL[m]}<i>${m==='optimum'?'central LP':m==='market'?'auction':'myopic'}</i></div>
+      <div class="val">${val}</div></div>
+      <div class="bar"><i style="width:${Math.max(2,r.efficiency*100)}%;background:${col}"></i></div>
+      <div class="effx">${pct(r.efficiency)} efficient · ${r.pctServed}% served</div>`;
+    div.onclick=()=>setMethod(m);
+    el.appendChild(div);
+  });
+}
+
+// ---- prices ----
+function drawPrices(){
+  const opt=scen.methods.optimum, mkt=scen.methods.market, net=scen.network;
+  let html='<tr><th>Store</th><th class="r">shadow price</th></tr>';
+  net.stores.forEach(s=>{ html+=`<tr><td class="nm">${s.name}</td><td class="r">£${fmt(opt.prices[s.id])}</td></tr>`; });
+  html+='<tr><th style="padding-top:9px">Warehouse</th><th class="r" style="padding-top:9px">rent · market</th></tr>';
+  net.warehouses.forEach(w=>{ html+=`<tr><td class="nm">${w.name}</td><td class="r">£${fmt(opt.rents[w.id])} · <span style="color:var(--mktC)">£${fmt(mkt.warehousePrice[w.id])}</span></td></tr>`; });
+  $('prices').innerHTML=html;
+}
+const fmt=v=>(Math.round(v*100)/100).toString();
+
+// ---- process panel (per method) ----
+function setMethod(m,keep){
+  method=m;
+  ['mOpt','mMkt','mGrd'].forEach(id=>$(id).classList.toggle('on',$(id).dataset.m===m));
+  document.querySelectorAll('.srow').forEach(r=>r.classList.toggle('on',r.dataset.m===m));
+  // pick frames for the process panel
+  if(m==='market'){ frames=scen.methods.market.frames;
+    $('procTitle').textContent='Price discovery'; $('procSub').dataset.k='mkt'; }
+  else if(m==='greedy'){ frames=scen.methods.greedy.frames;
+    $('procTitle').textContent='Greedy, step by step'; }
+  else { frames=[]; $('procTitle').textContent='Solved in one shot'; }
+  idx=frames.length?frames.length-1:0;
+  $('scrub').max=Math.max(0,frames.length-1); $('scrub').value=idx;
+  $('playBtn').disabled=!frames.length;
+  drawMap(); drawProc(); updateTLabel(); procLegend();
+  if(!keep && frames.length){ idx=0;$('scrub').value=0;drawProc();updateTLabel();startPlay(); }
+}
+function procLegend(){
+  const el=$('procLegend');
+  if(method==='market'){ el.innerHTML=scen.network.warehouses.map((w,i)=>
+    `<span><i class="sw" style="background:${WCOL(i)}"></i>${w.name} price</span>`).join('')
+    +'<span><i class="sw" style="background:#555;border-radius:0;width:14px;height:2px"></i>LP rent</span>'; }
+  else if(method==='greedy'){ const obj=scen.objective;
+    el.innerHTML=`<span><i class="sw" style="background:var(--grdC)"></i>greedy ${obj}</span><span><i class="sw" style="background:#555;border-radius:0;width:14px;height:2px"></i>optimum ${obj}</span>`; }
+  else el.innerHTML='';
+}
+const WPAL=['#7cc4ff','#ffc266','#5fd0c5','#c79bff','#ff8f6b'];
+const WCOL=i=>WPAL[i%WPAL.length];
+
+function drawProc(){
+  const {ctx,w,h}=fit($('procCanvas')); ctx.clearRect(0,0,w,h);
+  const pad={l:34,r:12,t:12,b:22};
+  const plot=(xN,maxY,draw)=>{
+    ctx.strokeStyle=C('--line');ctx.strokeRect(pad.l,pad.t,w-pad.l-pad.r,h-pad.t-pad.b);
+    ctx.fillStyle=C('--muted');ctx.font='10px '+C('--mono');ctx.textAlign='right';
+    ctx.fillText(fmt(maxY),pad.l-5,pad.t+9);ctx.fillText('0',pad.l-5,h-pad.b);
+    draw((i)=>pad.l+(w-pad.l-pad.r)*(xN<2?0.5:i/(xN-1)), v=>h-pad.b-(h-pad.t-pad.b)*v/(maxY||1));
+  };
+  if(method==='optimum'){
+    ctx.fillStyle=C('--muted');ctx.font='12px '+C('--mono');ctx.textAlign='center';
+    ctx.fillText('One linear program — no iteration.',w/2,h/2-6);
+    ctx.fillStyle=C('--optC');ctx.font='600 13px '+C('--mono');
+    const obj=scen.objective; ctx.fillText((obj==='welfare'?'welfare ':'cost ')+(obj==='welfare'?scen.methods.optimum.welfare:scen.methods.optimum.cost),w/2,h/2+15);
+    return;
+  }
+  if(method==='market'){
+    const net=scen.network, rents=scen.methods.optimum.rents;
+    const maxY=Math.max(1,...net.warehouses.map(o=>rents[o.id]),
+      ...frames.map(f=>Math.max(...net.warehouses.map(o=>f.warehousePrice[o.id]))))*1.12;
+    plot(frames.length,maxY,(X,Y)=>{
+      net.warehouses.forEach((o,wi)=>{ // target rent
+        ctx.strokeStyle='#55556a';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+        ctx.beginPath();ctx.moveTo(pad.l,Y(rents[o.id]));ctx.lineTo(w-pad.r,Y(rents[o.id]));ctx.stroke();ctx.setLineDash([]);
+      });
+      net.warehouses.forEach((o,wi)=>{ ctx.strokeStyle=WCOL(wi);ctx.lineWidth=2;ctx.beginPath();
+        for(let i=0;i<=idx;i++){const x=X(i),y=Y(frames[i].warehousePrice[o.id]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke(); });
+      marker(X(idx));
+    });
+  } else { // greedy
+    const obj=scen.objective, key=obj==='welfare'?'welfare':'cost';
+    const target=obj==='welfare'?scen.methods.optimum.welfare:scen.methods.optimum.cost;
+    const maxY=Math.max(target,...frames.map(f=>f[key]||0))*1.15;
+    plot(frames.length,maxY,(X,Y)=>{
+      ctx.strokeStyle='#55556a';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+      ctx.beginPath();ctx.moveTo(pad.l,Y(target));ctx.lineTo(w-pad.r,Y(target));ctx.stroke();ctx.setLineDash([]);
+      ctx.strokeStyle=C('--grdC');ctx.lineWidth=2;ctx.beginPath();
+      for(let i=0;i<=idx;i++){const x=X(i),y=Y(frames[i][key]||0);i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+        ctx.fillStyle=C('--grdC');ctx.fillRect(x-1.5,y-1.5,3,3);} ctx.stroke();
+      marker(X(idx));
+    });
+  }
+  function marker(x){ ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,h-pad.b);ctx.stroke();ctx.setLineDash([]); }
+}
+function updateTLabel(){
+  if(!frames.length){ $('tlabel').innerHTML=''; return; }
+  const f=frames[idx];
+  if(method==='market') $('tlabel').innerHTML=`round <b>${f.round}</b> · ${f.assigned} placed`;
+  else $('tlabel').innerHTML=`step <b>${f.step||idx+1}</b>/${frames.length}`;
+}
+
+// ---- transport ----
+let timer=null,gen=0;
+function seek(i){ idx=Math.max(0,Math.min(i,frames.length-1));$('scrub').value=idx;drawProc();updateTLabel(); }
+function stopPlay(){ playing=false;gen++;if(timer){clearTimeout(timer);timer=null;}$('playBtn').textContent='▶ Play'; }
+function startPlay(){ if(!frames.length)return; gen++;const g=gen;if(timer)clearTimeout(timer);
+  if(idx>=frames.length-1)seek(0); playing=true;$('playBtn').textContent='❚❚ Pause';
+  const dt=method==='greedy'?420:90;
+  const step=()=>{ if(g!==gen||!playing)return; if(idx>=frames.length-1){stopPlay();return;} seek(idx+1);timer=setTimeout(step,dt); };
+  timer=setTimeout(step,dt);
+}
+function togglePlay(){ if(playing)stopPlay();else startPlay(); }
+
+$('scenario').onchange=e=>{ stopPlay(); selectScenario(+e.target.value); };
+['mOpt','mMkt','mGrd'].forEach(id=>$(id).onclick=()=>{ stopPlay(); setMethod($(id).dataset.m); });
+$('playBtn').onclick=togglePlay;
+$('scrub').oninput=e=>{ stopPlay(); seek(+e.target.value); };
+window.addEventListener('resize',()=>{ if(scen){ drawMap(); drawProc(); } });
+loadData();
+
+// ---- popovers ----
+const POP={
+  transportation:{title:'The transportation problem',html:`
+    <p>A classic of operations research: ship a single good from <b>supply</b> points to <b>demand</b> points
+    at minimum total cost, respecting each supplier's capacity and each customer's demand.</p>
+    <p class="muted">It's a linear program, so it solves exactly and fast — the backbone of logistics,
+    distribution and network-flow planning.</p>`},
+  auction:{title:'Allocation by auction',html:`
+    <p>Disaggregate the problem: each <b>unit of demand</b> is a bidder, each <b>unit of capacity</b> an item.
+    Bidders repeatedly bid for the item giving them the most surplus net of price; prices rise until everyone
+    is matched.</p>
+    <div class="eq">bid = benefit − second-best + ε</div>
+    <p class="muted">Bertsekas' auction algorithm. With no central solver it still reaches the optimal
+    assignment — the single-item <a href="../auctions/" style="color:var(--accent)">auctions</a> idea, scaled up.</p>`},
+  gap:{title:'The efficiency gap',html:`
+    <p>How far a method falls short of the optimum — a welfare ratio when demand is elastic, otherwise a cost
+    ratio. <b>1.0</b> is optimal.</p>
+    <p class="muted">The market closes the gap entirely; greedy can leave it wide open. The same "price of
+    acting locally" the <a href="../dcop/" style="color:var(--accent)">DCOP</a> demo measures in conflicts.</p>`},
+  efficiency:{title:'Efficiency',html:`
+    <p>A single score in [0, 1]: <b>optimum cost ÷ method cost</b> (or method welfare ÷ optimum welfare when
+    demand is elastic). 1.0 means you did as well as the planner.</p>`},
+  shadowprice:{title:'Shadow price',html:`
+    <p>The marginal cost of serving <b>one more unit</b> at a store — the LP's dual variable on that store's
+    demand constraint. It's the natural market-clearing price there.</p>
+    <p class="muted">At a store served from the dearest open lane, the shadow price is exactly that lane's
+    delivered cost.</p>`},
+  rent:{title:'Capacity rent',html:`
+    <p>The dual on a warehouse's capacity: how much total cost would fall given <b>one more unit</b> of its
+    supply. Scarce, cheap capacity earns a high rent; slack capacity earns nothing.</p>
+    <p class="muted">Remarkably, the price the auction settles on for a warehouse equals this rent — the market
+    discovers the dual.</p>`},
+  elastic:{title:'Elastic demand',html:`
+    <p>Demand with a <b>value</b> attached: a unit is only worth serving if its value covers the delivered
+    cost. Unlike mandatory demand, it can be left unmet.</p>
+    <p class="muted">This turns "minimise cost" into "maximise <b>welfare</b>" — served value minus cost.</p>`},
+  welfare:{title:'Welfare, not just cost',html:`
+    <p>When demand is elastic the objective is <b>welfare</b> = value of what's served − cost of serving it.
+    Leaving low-value demand unserved can be the optimal call.</p>
+    <p class="muted">A myopic dispatcher that fills the cheapest lane first burns scarce supply on
+    cheap-to-reach but low-value demand — and loses welfare.</p>`},
+};
+(function(){
+  const pop=$('pop'); let pinned=null;
+  function show(el){ const d=POP[el.dataset.pop]; if(!d) return;
+    pop.innerHTML='<h4>'+d.title+'</h4>'+d.html; pop.classList.add('show');
+    const r=el.getBoundingClientRect(),p=pop.getBoundingClientRect(),m=10;
+    let left=Math.max(m,Math.min(r.left+r.width/2-p.width/2,innerWidth-p.width-m));
+    let top=r.top-p.height-10; if(top<m) top=r.bottom+10;
+    pop.style.left=left+'px';pop.style.top=top+'px'; }
+  function hide(){ pop.classList.remove('show'); }
+  document.querySelectorAll('.x').forEach(el=>{
+    el.tabIndex=0; el.setAttribute('role','button');
+    el.addEventListener('mouseenter',()=>{ if(!pinned) show(el); });
+    el.addEventListener('mouseleave',()=>{ if(!pinned) hide(); });
+    el.addEventListener('focus',()=>{ if(!pinned) show(el); });
+    el.addEventListener('blur',()=>{ if(!pinned) hide(); });
+    el.addEventListener('click',e=>{ e.stopPropagation(); if(pinned===el){pinned=null;hide();}else{pinned=el;show(el);} });
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();} });
+  });
+  pop.addEventListener('click',e=>e.stopPropagation());
+  document.addEventListener('click',()=>{ if(pinned){pinned=null;hide();} });
+  addEventListener('keydown',e=>{ if(e.key==='Escape'&&pinned){pinned=null;hide();} });
+  addEventListener('scroll',()=>{ if(pinned) show(pinned); },true);
+})();
+</script>
+</body>
+</html>
