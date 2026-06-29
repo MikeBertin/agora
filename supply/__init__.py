@@ -5,6 +5,7 @@ a central LP optimum, an auction-algorithm market, and a greedy baseline.
 """
 from .model import Warehouse, Store, Lane, Network, Flow
 from .instances import SCENARIOS, BY_ID
+from .solve import solve_optimum
 
 __all__ = ["Warehouse", "Store", "Lane", "Network", "Flow",
-           "SCENARIOS", "BY_ID"]
+           "SCENARIOS", "BY_ID", "solve_optimum"]
