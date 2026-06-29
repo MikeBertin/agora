@@ -8,7 +8,6 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from supply import BY_ID
 from supply.analysis import compare, evaluate
 from supply.greedy import solve_greedy
 from supply.instances import bottleneck, myopia, regions, shortage

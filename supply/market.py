@@ -65,6 +65,12 @@ def solve_market(net: Network, eps: Optional[float] = None,
     if eps is None:
         eps = 1.0 / (nB + 1)  # < 1/n => optimal for integer benefits
 
+    # Mandatory demand that exceeds total capacity can never be served; bail out
+    # rather than letting the never-placeable buyers bid up to max_rounds.
+    mand_units = sum(int(s.demand) for s in net.stores if s.mandatory)
+    if mand_units > nK:
+        return _result(net, buyers, obj_wh, [None] * nB, [0.0] * nK, [], 0, eps)
+
     price = [0.0] * nK
     owner: List[Optional[int]] = [None] * nK   # object -> buyer
     held: List[Optional[int]] = [None] * nB    # buyer -> object (or _DUMMY)

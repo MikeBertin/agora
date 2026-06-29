@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Dict
 
-from .model import Flow, Network
+from .model import Network
 
 
 def evaluate(net: Network, flow: Dict[str, float]) -> dict:
@@ -50,13 +50,15 @@ def compare(net: Network) -> dict:
     from .market import solve_market
     from .solve import solve_optimum
 
-    methods = {
-        "optimum": solve_optimum(net),
-        "market": solve_market(net),
-        "greedy": solve_greedy(net),
-    }
     elastic = not net.all_mandatory()
-    opt = methods["optimum"]
+    opt = solve_optimum(net)
+    if not opt.get("feasible", True):
+        # mandatory demand can't be met — no optimum to compare against
+        return {"network": net.to_dict(),
+                "objective": "welfare" if elastic else "cost",
+                "feasible": False, "methods": {"optimum": opt}}
+
+    methods = {"optimum": opt, "market": solve_market(net), "greedy": solve_greedy(net)}
 
     rows = {}
     for name, r in methods.items():
