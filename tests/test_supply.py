@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from supply import BY_ID
 from supply.instances import bottleneck, regions, shortage
+from supply.market import solve_market
 from supply.solve import solve_optimum
 
 TOL = 1e-6
@@ -87,8 +88,52 @@ def test_shortage():
     check("shortage: scarce DC earns rent 2", close(r["rents"]["W1"], 2))
 
 
+def test_market_matches_optimum():
+    """The auction reaches the LP optimum on every scenario."""
+    for build in (regions, bottleneck, shortage):
+        net = build()
+        opt, mkt = solve_optimum(net), solve_market(net)
+        check(f"{net.name}: market cost equals optimum",
+              close(opt["cost"], mkt["cost"]))
+        check(f"{net.name}: market served equals optimum",
+              all(close(opt["served"][s], mkt["served"][s]) for s in opt["served"]))
+        if "welfare" in opt:
+            check(f"{net.name}: market welfare equals optimum",
+                  close(opt["welfare"], mkt["welfare"]))
+
+
+def test_market_discovers_prices():
+    """Converged object prices are the LP capacity rents (up to eps)."""
+    for build in (regions, bottleneck, shortage):
+        net = build()
+        opt, mkt = solve_optimum(net), solve_market(net)
+        ok = all(abs(mkt["warehousePrice"][w] - opt["rents"][w]) <= 0.1
+                 for w in opt["rents"])
+        check(f"{net.name}: market prices match capacity rents", ok)
+
+
+def test_market_frames():
+    mkt = solve_market(bottleneck())
+    check("frames are downsampled to the cap", len(mkt["frames"]) <= 120)
+    check("more rounds were actually run than frames kept",
+          mkt["rounds"] > len(mkt["frames"]))
+    last = mkt["frames"][-1]
+    check("final frame agrees with the result cost", close(last["cost"], mkt["cost"]))
+    check("final frame leaves no one still bidding", last["bidding"] == 0)
+
+
+def test_market_deterministic():
+    a, b = solve_market(shortage()), solve_market(shortage())
+    check("auction is deterministic (same cost)", close(a["cost"], b["cost"]))
+    check("auction is deterministic (same rounds)", a["rounds"] == b["rounds"])
+    check("market is feasible where mandatory demand is met",
+          solve_market(regions())["feasible"])
+
+
 if __name__ == "__main__":
-    for fn in [test_model, test_regions, test_bottleneck, test_shortage]:
+    for fn in [test_model, test_regions, test_bottleneck, test_shortage,
+               test_market_matches_optimum, test_market_discovers_prices,
+               test_market_frames, test_market_deterministic]:
         print(fn.__name__)
         fn()
     print("\nAll supply engine smoke tests passed.")
