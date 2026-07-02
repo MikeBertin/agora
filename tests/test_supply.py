@@ -10,7 +10,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from supply.analysis import compare, evaluate
 from supply.greedy import solve_greedy
-from supply.instances import bottleneck, myopia, regions, shortage
+from supply.instances import (SCENARIOS, bottleneck, myopia, regions,
+                              shortage, stranded)
 from supply.market import solve_market, _downsample
 from supply.model import Lane, Network, Store, Warehouse
 from supply.solve import solve_optimum
@@ -240,6 +241,22 @@ def test_compare_stranded_demand():
           c["comparison"]["market"]["efficiency"] == 1.0)
 
 
+def test_stranded_scenario():
+    """The shipped 'stranded' scenario: greedy fails half the network."""
+    check("stranded is a shipped scenario",
+          any(s["id"] == "stranded" for s in SCENARIOS))
+    net = stranded()
+    c = compare(net)
+    check("stranded optimum cost is 50",
+          close(c["comparison"]["optimum"]["cost"], 50))
+    g = c["comparison"]["greedy"]
+    check("stranded greedy serves only 50%", close(g["pctServed"], 50))
+    check("stranded greedy is infeasible", g["feasible"] is False)
+    check("stranded greedy efficiency is 0", g["efficiency"] == 0.0)
+    check("stranded market is optimal",
+          close(c["comparison"]["market"]["efficiency"], 1.0))
+
+
 def test_compare_nonpositive_welfare():
     """Ratio direction is undefined when optimal welfare <= 0; don't invert."""
     net = Network("mixed",
@@ -261,7 +278,7 @@ if __name__ == "__main__":
                test_greedy_gap_cost, test_compare,
                test_model_validation, test_market_integer_guard,
                test_market_edge_guards, test_compare_stranded_demand,
-               test_compare_nonpositive_welfare]:
+               test_stranded_scenario, test_compare_nonpositive_welfare]:
         print(fn.__name__)
         fn()
     print("\nAll supply engine smoke tests passed.")

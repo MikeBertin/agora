@@ -310,8 +310,8 @@ function drawScore(){
     const div=document.createElement('div'); div.className='srow'+(m===method?' on':''); div.dataset.m=m;
     div.innerHTML=`<div class="top"><div class="nm" style="color:${col}">${MLABEL[m]}<i>${m==='optimum'?'central LP':m==='market'?'auction':'myopic'}</i></div>
       <div class="val">${val}</div></div>
-      <div class="bar"><i style="width:${Math.max(2,r.efficiency*100)}%;background:${col}"></i></div>
-      <div class="effx">${pct(r.efficiency)} efficient · ${r.pctServed}% served</div>`;
+      <div class="bar"><i style="width:${Math.max(2,(r.efficiency||0)*100)}%;background:${col}"></i></div>
+      <div class="effx">${r.efficiency==null?'—':pct(r.efficiency)} efficient · ${r.pctServed}% served${r.feasible===false?' · <b style="color:var(--bad)">strands demand</b>':''}</div>`;
     div.onclick=()=>setMethod(m);
     el.appendChild(div);
   });

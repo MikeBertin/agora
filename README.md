@@ -64,7 +64,7 @@ core/                 # reusable pure-Python engine (no dependencies)
   dcop.py             #   graph colouring via DSA and MGM
 supply/               # logistics allocation engine (needs scipy; not in browser)
   model.py            #   transportation network: warehouses, stores, lanes
-  instances.py        #   four hand-checkable logistics scenarios
+  instances.py        #   five hand-checkable logistics scenarios
   solve.py            #   central LP optimum + dual shadow prices (scipy/HiGHS)
   market.py           #   auction algorithm -> allocation + clearing prices
   greedy.py           #   myopic cheapest-lane baseline
@@ -79,7 +79,7 @@ docs/                  # static site (served by GitHub Pages from /docs)
   data/               #   precomputed traces + manifests
   core/               #   copy of the engine, fetched by Pyodide
 tests/test_core.py    # engine smoke tests (37 checks)
-tests/test_supply.py  # supply engine smoke tests (needs venv; 66 checks)
+tests/test_supply.py  # supply engine smoke tests (needs venv; 84 checks)
 ```
 
 The `core/` engine is deliberately dependency-free and small enough that exact

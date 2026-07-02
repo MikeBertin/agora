@@ -1,6 +1,9 @@
 """Render the 1200x630 Open Graph / social card to docs/og.png.
 
-    python3 experiments/make_og.py
+Needs Pillow (not in requirements.txt — it's a build tool, not an engine dep):
+
+    .venv/bin/pip install pillow
+    .venv/bin/python experiments/make_og.py
 """
 from __future__ import annotations
 
@@ -15,11 +18,13 @@ MONO = "/System/Library/Fonts/Menlo.ttc"
 
 INK = (231, 231, 239)
 MUTED = (138, 138, 156)
-# demo accent colours (negotiation, auctions, voting, dcop)
+# demo accent colours (negotiation, auctions, voting, dcop; title gradient
+# matches the site's h1)
 STOPS = [(0.0, (124, 196, 255)), (0.40, (255, 194, 102)),
          (0.72, (95, 208, 197)), (1.0, (199, 155, 255))]
 DEMOS = [("Negotiation", (124, 196, 255)), ("Auctions", (255, 194, 102)),
-         ("Voting", (95, 208, 197)), ("Distributed optimisation", (199, 155, 255))]
+         ("Voting", (95, 208, 197)), ("DCOP", (199, 155, 255)),
+         ("Supply allocation", (111, 220, 155))]
 
 
 def lerp(a, b, t):
@@ -82,7 +87,7 @@ def main():
 
     # footer
     d.text((PAD + 4, 556),
-           "negotiation · auctions · voting · DCOP — a Python engine, live in-browser via Pyodide",
+           "negotiation · auctions · voting · DCOP · supply — one real Python engine",
            font=foot, fill=MUTED)
 
     out = os.path.join(root, "docs", "og.png")

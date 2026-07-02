@@ -11,7 +11,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.dcop import make_graph, dsa, mgm, count_conflicts
+from core.dcop import make_graph, dsa, mgm
 
 ROUNDS = 60
 P = 0.7

@@ -98,6 +98,31 @@ def myopia() -> Network:
     return Network("Greedy's blind spot", warehouses, stores, _lanes(costs))
 
 
+def stranded() -> Network:
+    """No backup route: greedy leaves a whole store with nothing.
+
+    The Coastal DC has no lane to the Valley store — only the Junction reaches
+    it. But the Junction's cheapest lane is to the City store (which the Coastal
+    DC could have covered). Greedy spends the Junction's stock on the City lane
+    and the Valley gets zero: the plan is cheap per unit shipped but fails half
+    the network. Its efficiency is 0 — cost comparisons mean nothing when you
+    don't serve the same demand.
+    """
+    warehouses = [
+        Warehouse("W1", "Junction DC", 10, 0.45, 0.40),
+        Warehouse("W2", "Coastal DC", 10, 0.90, 0.60),
+    ]
+    stores = [
+        Store("S1", "City store", 10, 0.65, 0.75),
+        Store("S2", "Valley store", 10, 0.12, 0.65),
+    ]
+    costs = {
+        ("W1", "S1"): 1, ("W1", "S2"): 2,
+        ("W2", "S1"): 3,               # the Coastal DC cannot reach the Valley
+    }
+    return Network("Stranded store", warehouses, stores, _lanes(costs))
+
+
 SCENARIOS = [
     {
         "id": "regions",
@@ -133,6 +158,17 @@ SCENARIOS = [
                  "doesn't. Grab the cheapest lane and you pay 9× to reach the "
                  "Remote store; plan ahead and the bill halves, 100 down to 50.",
         "network": myopia(),
+    },
+    {
+        "id": "stranded",
+        "label": "Stranded store",
+        "blurb": "Only the Junction DC can reach the Valley store — but its "
+                 "cheapest lane goes to the City, which the Coastal DC could have "
+                 "covered. Greedy burns the Junction's stock on that cheap lane "
+                 "and the Valley gets nothing: half the demand unserved, "
+                 "efficiency zero. The market and the optimum plan backwards "
+                 "from the constraint.",
+        "network": stranded(),
     },
 ]
 
