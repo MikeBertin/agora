@@ -27,6 +27,7 @@ package (`core/`). The same code runs two ways:
 | **[Voting](docs/voting/)** | Social choice | Plurality, Borda, instant-runoff and Condorcet over curated profiles (spoiler, the Condorcet paradox, and a profile where all four rules disagree), with a live majority graph. **Built.** |
 | **[Distributed optimisation](docs/dcop/)** | DCOP | Graph colouring as decentralised resource allocation: autonomous agents resolve conflicts with only local information via DSA and MGM. **Built.** |
 | **[Supply allocation](docs/supply/)** | Logistics / network flow | The transportation problem solved three ways — a central LP optimum, an auction-algorithm market where demand bids for capacity, and a greedy baseline — compared on cost, welfare and the efficiency gap. The market reaches the optimum *and* rediscovers its dual prices by bidding. **Built.** |
+| **[Matching markets](docs/matching/)** | Market design | Gale–Shapley deferred acceptance, animated: proposals, tentative engagements and rejection cascades, one-to-one and hospitals/residents with quotas. Proposer-optimality, one-sided strategy-proofness and the rural hospital theorem are *proved on each instance* — by enumerating every stable matching and brute-forcing every possible misreport. **Built.** |
 
 ## The negotiation agents
 
@@ -62,6 +63,8 @@ core/                 # reusable pure-Python engine (no dependencies)
   voting.py           #   plurality / Borda / IRV / Condorcet + pairwise margins
   voting_scenarios.py #   curated profiles (spoiler, paradox, all-differ)
   dcop.py             #   graph colouring via DSA and MGM
+  matching.py         #   Gale-Shapley deferred acceptance + stability proofs
+  matching_scenarios.py #  curated markets (direction, strategy, rural hospital)
 supply/               # logistics allocation engine (needs scipy; not in browser)
   model.py            #   transportation network: warehouses, stores, lanes
   instances.py        #   five hand-checkable scenarios + a random generator
@@ -71,12 +74,12 @@ supply/               # logistics allocation engine (needs scipy; not in browser
   greedy.py           #   myopic cheapest-lane baseline
   analysis.py         #   score any flow + three-way efficiency comparison
 experiments/          # one runner per demo; each writes docs/data/*.json
-  run.py  run_auctions.py  run_voting.py  run_dcop.py   # + mirror core/ into docs/
+  run.py  run_auctions.py  run_voting.py  run_dcop.py  run_matching.py   # + mirror core/ into docs/
   run_supply.py       # writes docs/data/supply.json (playback-only; needs venv)
   bench_supply.py     # scale benchmark: LP vs ε-scaled vs synchronous auction
 docs/                  # static site (served by GitHub Pages from /docs)
   index.html          #   landing
-  negotiation/ auctions/ voting/ dcop/   # the demos (Canvas viz + Pyodide live)
+  negotiation/ auctions/ voting/ dcop/ matching/   # the demos (Canvas viz + Pyodide live)
   supply/             #   supply demo (Canvas viz, precomputed playback)
   data/               #   precomputed traces + manifests
   core/               #   copy of the engine, fetched by Pyodide
@@ -109,7 +112,7 @@ cd docs && python3 -m http.server 8761
 Regenerate the precomputed traces (and refresh the in-browser engine copy in `docs/core`):
 
 ```sh
-for r in run run_auctions run_voting run_dcop; do python3 experiments/$r.py; done
+for r in run run_auctions run_voting run_dcop run_matching; do python3 experiments/$r.py; done
 ```
 
 The supply engine is the exception — it needs scipy, so set up a venv first:

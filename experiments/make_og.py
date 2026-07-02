@@ -24,7 +24,7 @@ STOPS = [(0.0, (124, 196, 255)), (0.40, (255, 194, 102)),
          (0.72, (95, 208, 197)), (1.0, (199, 155, 255))]
 DEMOS = [("Negotiation", (124, 196, 255)), ("Auctions", (255, 194, 102)),
          ("Voting", (95, 208, 197)), ("DCOP", (199, 155, 255)),
-         ("Supply allocation", (111, 220, 155))]
+         ("Supply", (111, 220, 155)), ("Matching", (255, 143, 171))]
 
 
 def lerp(a, b, t):
@@ -87,7 +87,7 @@ def main():
 
     # footer
     d.text((PAD + 4, 556),
-           "negotiation · auctions · voting · DCOP · supply — one real Python engine",
+           "negotiation · auctions · voting · DCOP · supply · matching — one real Python engine",
            font=foot, fill=MUTED)
 
     out = os.path.join(root, "docs", "og.png")

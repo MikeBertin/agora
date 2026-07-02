@@ -11,6 +11,11 @@ from core.analysis import analyse, pareto_frontier, outcome_space
 from core.auctions import run_auctions, run_round, first_price_bid
 from core.dcop import make_graph, dsa, mgm, count_conflicts
 from core.domains import JOB_OFFER, CANDIDATE, EMPLOYER, PROFILES
+from core.matching import (all_stable_matchings, best_misreport,
+                           blocking_pairs, deferred_acceptance,
+                           evaluate as match_eval, random_market)
+from core.matching_scenarios import BY_ID as MATCH_BY_ID
+from core.matching_scenarios import SCENARIOS as MATCH_SCENARIOS
 from core.model import FrequencyModel
 from core.protocol import run_session
 from core.voting import evaluate as vote_eval
@@ -140,10 +145,94 @@ def test_dcop():
           count_conflicts(last["assignment"], g["edges"]) == last["conflicts"])
 
 
+def test_matching():
+    # every scenario, both directions: deferred acceptance lands on a stable
+    # matching (no pair would rather elope)
+    for s in MATCH_SCENARIOS:
+        for d in ("a", "b"):
+            run = deferred_acceptance(s["a"], s["b"], d)
+            check(f"{s['id']} ({d} proposes) is stable",
+                  blocking_pairs(run["matchA"], s["a"], s["b"]) == [])
+
+    # clear: aligned preferences -> a unique stable matching, direction moot
+    ev = match_eval(MATCH_BY_ID["clear"]["a"], MATCH_BY_ID["clear"]["b"])
+    check("clear has a unique stable matching", ev["stable"]["count"] == 1)
+    check("clear: both directions agree",
+          ev["runs"]["a"]["matchA"] == ev["runs"]["b"]["matchA"])
+    check("clear: the matching is assortative",
+          ev["runs"]["a"]["matchA"] == {"Ana": ["Koru"], "Ben": ["Lumen"],
+                                        "Cleo": ["Onyx"]})
+
+    # chain: one rejection dominoes through the whole market
+    run = deferred_acceptance(MATCH_BY_ID["chain"]["a"],
+                              MATCH_BY_ID["chain"]["b"], "a")
+    check("chain takes 5 rounds", run["rounds"] == 5)
+    check("chain strands Dex", run["matchA"]["Dex"] == []
+          and run["unmatchedA"] == ["Dex"])
+    check("chain has bump events", sum(len(f["bumped"]) for f in run["frames"]) == 3)
+    check("chain: final frame matches the result",
+          sorted(map(tuple, run["frames"][-1]["engaged"]))
+          == sorted((p, r) for p, rs in run["matchA"].items() for r in rs))
+
+    # direction: proposer-optimal, receiver-pessimal — proved by enumeration
+    sc = MATCH_BY_ID["direction"]
+    ev = match_eval(sc["a"], sc["b"])
+    check("direction has three stable matchings", ev["stable"]["count"] == 3)
+    check("candidates proposing: candidates all get their 1st",
+          ev["runs"]["a"]["avgRankA"] == 1.0 and ev["runs"]["a"]["avgRankB"] == 3.0)
+    check("companies proposing: companies all get their 1st",
+          ev["runs"]["b"]["avgRankB"] == 1.0 and ev["runs"]["b"]["avgRankA"] == 3.0)
+    da = {p: rs[0] for p, rs in ev["runs"]["a"]["matchA"].items()}
+    prefs = sc["a"]["prefs"]
+    check("DA is proposer-optimal over every stable matching",
+          all(prefs[p].index(da[p]) <= prefs[p].index(m[p])
+              for m in ev["stable"]["matchings"] for p in da))
+
+    # strategy: honesty is dominant for proposers only (brute-forced)
+    sc = MATCH_BY_ID["strategy"]
+    st = match_eval(sc["a"], sc["b"], strategy=True)["strategy"]
+    check("no proposer can gain by lying", all(not r["gain"] for r in st["a"]))
+    koru = next(r for r in st["b"] if r["agent"] == "Koru")
+    check("Koru gains by truncating its list",
+          koru["gain"] and koru["best"] == "Ben" and koru["report"] == ["Ben"])
+
+    # hospitals: quotas + the rural hospital theorem, proved by enumeration
+    sc = MATCH_BY_ID["hospitals"]
+    ev = match_eval(sc["a"], sc["b"])
+    check("hospitals has two stable matchings", ev["stable"]["count"] == 2)
+    check("Rhea and Sam swap with the direction",
+          ev["runs"]["a"]["matchA"]["Rhea"] == ["Metro"]
+          and ev["runs"]["b"]["matchA"]["Rhea"] == ["Bay"])
+    check("City fills both posts in every stable matching",
+          all(sum(1 for r in m.values() if r == "City") == 2
+              for m in ev["stable"]["matchings"]))
+    check("Rural gets exactly Wren in every stable matching",
+          all([p for p, r in m.items() if r == "Rural"] == ["Wren"]
+              for m in ev["stable"]["matchings"]))
+    check("Vik is unmatched in every stable matching",
+          all(m["Vik"] is None for m in ev["stable"]["matchings"]))
+
+    # a random market: still stable, and proposing still helps
+    a, b = random_market(6, 3)
+    check("random market is deterministic", random_market(6, 3) == (a, b))
+    ra = deferred_acceptance(a, b, "a")
+    rb = deferred_acceptance(a, b, "b")
+    check("random market: both runs stable",
+          blocking_pairs(ra["matchA"], a, b) == []
+          and blocking_pairs(rb["matchA"], a, b) == [])
+    check("random market: proposing side does at least as well",
+          ra["avgRankA"] <= rb["avgRankA"] and rb["avgRankB"] <= ra["avgRankB"])
+    check("misreport search matches the truthful run",
+          best_misreport("C1", "a", a, b)["truthful"] == ra["matchA"]["C1"][0])
+    check("full enumeration contains the DA outcome",
+          {p: rs[0] for p, rs in ra["matchA"].items()}
+          in all_stable_matchings(a, b))
+
+
 if __name__ == "__main__":
     for fn in [test_domain_and_utility, test_frequency_model,
                test_pareto_and_nash, test_sessions, test_auctions, test_voting,
-               test_dcop]:
+               test_dcop, test_matching]:
         print(fn.__name__)
         fn()
     print("\nAll engine smoke tests passed.")

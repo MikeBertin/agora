@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agora — Matching Markets</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="Agora — Matching Markets">
+<meta property="og:image" content="https://mikebertin.github.io/agora/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://mikebertin.github.io/agora/og.png">
+<meta name="description" content="Gale–Shapley deferred acceptance, animated: proposals, tentative engagements and rejection cascades. Who proposes wins, honesty pays for one side only, and the rural hospital theorem — all proved on-instance. Runs the real Python engine via Pyodide.">
+<style>
+  :root{
+    --bg:#0a0a0f; --panel:#13131c; --line:#23232f; --line2:#2c2c3a;
+    --ink:#e7e7ef; --muted:#8a8a9c; --accent:#ff8fab;
+    --aCol:#7cc4ff; --bCol:#ffc266; --pair:#ff8fab; --bad:#ff6b6b; --good:#9af0c8;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:radial-gradient(1100px 700px at 50% -10%,#16161f,#0a0a0f 60%);
+    color:var(--ink);min-height:100vh;
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  .page{max-width:1120px;margin:0 auto;padding:36px 24px 56px}
+  a.back{color:var(--muted);text-decoration:none;font-size:13px;font-family:var(--mono)}
+  a.back:hover{color:var(--ink)}
+  .hero{margin:12px 0 20px}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.4px}
+  .sub{color:var(--muted);font-size:14px;line-height:1.6;max-width:790px;margin:0}
+  .sub b{color:var(--ink);font-weight:600}
+
+  .controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin-bottom:18px}
+  .ctl{display:flex;flex-direction:column;gap:5px}
+  .ctl label{font-family:var(--mono);font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted)}
+  select,button{font:inherit;font-size:13.5px;color:var(--ink);background:#1a1a25;
+    border:1px solid var(--line2);border-radius:8px;padding:7px 10px}
+  select{min-width:210px}
+  button{cursor:pointer} button:hover{border-color:#3a3a4d}
+  button.primary{background:linear-gradient(180deg,#4a2233,#341826);border-color:#68314a;color:#ffd7e2}
+  button:disabled{opacity:.45;cursor:default}
+  .mode{display:flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+  .mode button{border:0;border-radius:0;background:#15151e;padding:7px 13px}
+  .mode button.on{background:#40222d;color:#ffd7e2}
+
+  .blurb{background:#14141d;border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:8px;padding:11px 14px;margin-bottom:18px;color:var(--muted);font-size:13px;line-height:1.55}
+  .blurb b{color:var(--ink)}
+
+  .cols{display:flex;gap:18px;align-items:flex-start}
+  @media(max-width:900px){.cols{flex-direction:column}}
+  .col-left{flex:1 1 560px;min-width:0;display:flex;flex-direction:column;gap:14px}
+  .col-right{flex:0 0 372px;display:flex;flex-direction:column;gap:14px}
+  @media(max-width:900px){.col-right{flex:1 1 auto;width:100%}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 14px 12px}
+  .panel h3{margin:0 0 2px;font-size:14.5px}
+  .panel .psub{margin:0 0 10px;color:var(--muted);font-size:12px;line-height:1.45}
+  canvas{width:100%;display:block;border-radius:6px}
+  .legend{display:flex;flex-wrap:wrap;gap:13px;margin-top:8px;font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .sw.circ{border-radius:50%}
+  .cap{margin:9px 0 0;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  .cap b{color:var(--ink)}
+
+  .transport{display:flex;align-items:center;gap:13px;margin-top:10px}
+  .transport input[type=range]{flex:1;accent-color:var(--accent)}
+  .transport button{padding:6px 11px}
+  .tlabel{font-family:var(--mono);font-size:11.5px;color:var(--muted);min-width:110px;text-align:right}
+  .tlabel b{color:var(--ink)}
+
+  /* matching list */
+  .mrow{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .mrow:last-child{border-bottom:0}
+  .mrow .who{font-weight:600}
+  .mrow .arrow{color:var(--muted)}
+  .mrow .rk{font-family:var(--mono);font-size:10.5px;margin-left:auto;display:flex;gap:5px}
+  .chip{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:6px;
+    font-family:var(--mono);font-weight:700;font-size:10.5px;color:#0a0a0f}
+  .mrow.un{color:var(--bad)}
+  .mrow.un .who{color:var(--bad)}
+  .slotnote{font-family:var(--mono);font-size:11px;color:#ffd9a0;margin-top:7px}
+
+  /* direction table */
+  .dtab{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+  .dtab th{text-align:left;color:var(--muted);font-weight:500;font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;padding:0 0 6px}
+  .dtab td{padding:5px 0;border-top:1px solid var(--line)}
+  .dtab td.r{text-align:right}
+  .dtab tr.on td{color:var(--ink)}
+  .dtab tr.off td{color:var(--muted)}
+  .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:7px;vertical-align:1px}
+  .stableline{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:9px}
+  .stableline b{color:var(--ink)}
+
+  /* honesty panel */
+  .hline{display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line);font-size:12.5px;line-height:1.5}
+  .hline:last-child{border-bottom:0}
+  .hline .mk{font-family:var(--mono);flex:0 0 14px}
+  .hline.ok .mk{color:var(--good)} .hline.lie .mk{color:var(--bad)}
+  .hline .txt{color:var(--muted)} .hline .txt b{color:var(--ink)}
+  .hline code{font-family:var(--mono);font-size:11px;background:#1a1a25;padding:1px 5px;border-radius:4px}
+
+  .notice{margin-top:30px;border-top:1px solid var(--line);padding-top:22px}
+  .notice-title{font-size:12px;text-transform:uppercase;letter-spacing:1.6px;color:var(--muted);margin:0 0 14px;font-weight:600}
+  .notice-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:900px){.notice-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.notice-grid{grid-template-columns:1fr}}
+  .ncard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+  .ncard h3{margin:0 0 7px;font-size:14px;font-weight:600}
+  .ncard p{margin:0 0 11px;color:var(--muted);font-size:12.5px;line-height:1.5}
+
+  .x{color:var(--accent);border-bottom:1px dotted currentColor;cursor:help;white-space:nowrap}
+  .x::after{content:'ⓘ';font-size:.7em;vertical-align:.35em;margin-left:1px;opacity:.7}
+  .x:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+  .x.why{white-space:normal;font-size:12.5px;font-weight:600}
+  #pop{position:fixed;z-index:60;max-width:320px;background:#15151f;border:1px solid #2e2e3e;
+    border-radius:12px;padding:13px 15px;box-shadow:0 22px 55px -16px #000,0 0 0 1px #000;
+    font-size:13px;line-height:1.55;visibility:hidden;opacity:0;transform:translateY(4px);
+    pointer-events:none;transition:opacity .13s,transform .13s}
+  #pop.show{visibility:visible;opacity:1;transform:none;pointer-events:auto}
+  #pop h4{margin:0 0 7px;font-size:13.5px;color:var(--accent)}
+  #pop p{margin:0 0 8px}#pop p:last-child{margin:0}
+  #pop b{color:var(--ink);font-weight:600}
+  #pop .muted{color:var(--muted);font-size:12px}
+  #pop .eq{font-family:var(--mono);background:#0e0e16;border:1px solid var(--line);border-radius:7px;
+    padding:8px 10px;margin:9px 0;font-size:12.5px;text-align:center;color:#ffe6ee}
+</style>
+</head>
+<body>
+<div class="page">
+  <a class="back" href="../">&larr; Agora</a>
+  <header class="hero">
+    <h1>Matching Markets</h1>
+    <p class="sub">Candidates rank companies; companies rank candidates back. No prices, no central
+    planner — just <span class="x" data-pop="da">deferred acceptance</span>: propose, hold the best offer
+    <b>tentatively</b>, reject the rest, repeat. The result is a <span class="x" data-pop="stable">stable</span>
+    matching — no pair would rather elope — but it quietly favours whoever
+    <span class="x" data-pop="proposeropt">does the proposing</span>, and only the proposing side can
+    <span class="x" data-pop="onesided">safely tell the truth</span>. The algorithm behind the
+    <span class="x" data-pop="nrmp">real hospital match</span>. <b>Live</b> runs the real Python engine
+    in your browser via Pyodide.</p>
+  </header>
+
+  <div class="controls">
+    <div class="ctl"><label for="scenario">Scenario</label><select id="scenario"></select></div>
+    <div class="ctl"><label>Proposing side</label>
+      <div class="mode">
+        <button id="dirA" class="on">Candidates propose</button>
+        <button id="dirB">Companies propose</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="blurb" id="blurb"></div>
+
+  <div class="cols">
+    <div class="col-left">
+      <div class="panel">
+        <h3>The market</h3>
+        <p class="psub"><b style="color:var(--aCol)">One side</b> (circles) pairs off with the
+        <b style="color:var(--bCol)">other</b> (squares, filled by how many posts are taken). Scrub the
+        rounds: proposals land, engagements form <b>tentatively</b>, and a better offer
+        <b style="color:var(--bad)">bumps</b> the old one — the rejection then ripples on. A red ring is
+        an agent the market left unmatched.</p>
+        <canvas id="mapCanvas" height="430"></canvas>
+        <div class="legend">
+          <span><i class="sw circ" style="background:var(--aCol)"></i><span id="legA">candidates</span></span>
+          <span><i class="sw" style="background:var(--bCol)"></i><span id="legB">companies</span></span>
+          <span><i class="sw" style="background:var(--pair)"></i>engaged</span>
+          <span><i class="sw" style="background:var(--bad)"></i>rejected / bumped</span>
+          <span><i class="sw circ" style="border:2px solid var(--bad);background:transparent"></i>unmatched</span>
+        </div>
+        <p class="cap" id="mapCap"></p>
+        <div class="transport">
+          <button id="playBtn">▶ Play</button>
+          <input id="scrub" type="range" min="0" max="0" value="0">
+          <div class="tlabel" id="tlabel"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-right">
+      <div class="panel">
+        <h3>The matching</h3>
+        <p class="psub">Each pair, with the rank every agent gave the partner it ended up with —
+        <b style="color:var(--aCol)">#left</b> · <b style="color:var(--bCol)">#right</b>. #1 means
+        first choice.</p>
+        <div id="pairs"></div>
+        <div id="slots"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Who proposes, wins</h3>
+        <p class="psub">Average rank of the partner each side receives (lower is better), under both
+        directions. Deferred acceptance hands the <span class="x" data-pop="proposeropt">proposing
+        side its best stable outcome</span> — and the other side its worst.</p>
+        <table class="dtab" id="dirtab"></table>
+        <div class="stableline" id="stableline"></div>
+      </div>
+
+      <div class="panel" id="honesty" style="display:none">
+        <h3>Honesty, brute-forced</h3>
+        <p class="psub">The engine replays the market under <b>every ordered list each agent could
+        report</b> and scores the outcome by their true preferences.</p>
+        <div id="hlines"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Live exploration</h3>
+        <p class="psub">Random market, both directions, run by the real engine — watch the proposing
+        side's average rank beat the receiving side's on almost every draw.</p>
+        <div id="liveCtls" style="opacity:.5">
+          <div class="ctl" style="margin-bottom:10px"><label>Market size · <span id="nVal">5</span> × <span id="nVal2">5</span></label>
+            <input id="nSlider" type="range" min="3" max="8" value="5" disabled style="width:100%;accent-color:var(--accent)"></div>
+          <div class="ctl"><label>Seed · <span id="sVal">7</span></label>
+            <input id="sSlider" type="range" min="1" max="99" value="7" disabled style="width:100%;accent-color:var(--accent)"></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:12px">
+          <div class="mode"><button id="modePlay" class="on">Scenarios</button><button id="modeLive">Live · Python</button></div>
+          <button id="runLive" class="primary" style="display:none;flex:1">Run live ▶</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="notice">
+    <h2 class="notice-title">Things to notice</h2>
+    <div class="notice-grid">
+      <div class="ncard">
+        <h3>No one wants to elope</h3>
+        <p>When the music stops, check any candidate–company pair: at least one of the two prefers
+        what they already have. That's stability — the matching polices itself, with no contracts
+        and no enforcement.</p>
+        <span class="x why" data-pop="stable">What stability buys</span>
+      </div>
+      <div class="ncard">
+        <h3>Who proposes, wins</h3>
+        <p>Load "Who proposes, wins": the same market has three stable matchings, and the algorithm
+        picks whichever end of that range favours the proposing side. Neutral procedure, partisan
+        outcome.</p>
+        <span class="x why" data-pop="proposeropt">Proposer-optimality</span>
+      </div>
+      <div class="ncard">
+        <h3>Honesty is one-sided</h3>
+        <p>No proposer can ever gain by misreporting — proved here by brute force, not by theorem.
+        But in "The profitable lie", a receiving company games the match just by shortening
+        its list.</p>
+        <span class="x why" data-pop="onesided">One-sided strategy-proofness</span>
+      </div>
+      <div class="ncard">
+        <h3>The rural hospital rule</h3>
+        <p>In "Hospitals &amp; residents", the unpopular hospital fills the same single post — and the
+        same resident goes unmatched — in <b>every</b> stable matching. No mechanism choice can
+        staff the countryside.</p>
+        <span class="x why" data-pop="rural">The rural hospital theorem</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="pop" role="tooltip"></div>
+
+<script>
+const C=k=>getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+const $=id=>document.getElementById(id);
+let data=null, scen=null, dir='a', frames=[], idx=0, playing=false, mode='play';
+let pyodide=null, pyReady=false;
+
+async function loadData(){
+  data=await (await fetch('../data/matching.json')).json();
+  const sel=$('scenario'); sel.innerHTML='';
+  data.scenarios.forEach((s,i)=>sel.add(new Option(s.label,i)));
+  sel.value=1; selectScenario(1);
+}
+function selectScenario(i){
+  scen=data.scenarios[i];
+  $('blurb').innerHTML='<b>'+scen.label+'.</b> '+scen.blurb;
+  $('dirA').textContent=scen.sides.a.label+' propose';
+  $('dirB').textContent=scen.sides.b.label+' propose';
+  $('legA').textContent=scen.sides.a.label.toLowerCase();
+  $('legB').textContent=scen.sides.b.label.toLowerCase();
+  setDir('a');
+}
+
+function run(){ return scen.runs[dir]; }
+
+function setDir(d){
+  stopPlay();
+  dir=d;
+  $('dirA').classList.toggle('on',d==='a'); $('dirB').classList.toggle('on',d==='b');
+  frames=run().frames;
+  idx=frames.length-1;
+  $('scrub').max=Math.max(0,frames.length-1); $('scrub').value=idx;
+  renderPairs(); renderDir(); renderHonesty();
+  drawMap(); updateTLabel();
+  seek(0); startPlay();
+}
+
+// ---- map ----
+function fit(cv){const dpr=window.devicePixelRatio||1,w=cv.clientWidth;
+  const h=cv._h||(cv._h=parseInt(cv.getAttribute('height')));
+  cv.style.height=h+'px';
+  cv.width=w*dpr;cv.height=h*dpr;const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return{ctx,w,h};}
+
+function layout(w,h){
+  const A=scen.sides.a.agents, B=scen.sides.b.agents;
+  const padT=34, padB=22, xa=Math.max(96,w*0.16), xb=Math.min(w-96,w*0.84);
+  const ya=i=>padT+(h-padT-padB)*(A.length<2?0.5:i/(A.length-1));
+  const yb=i=>padT+(h-padT-padB)*(B.length<2?0.5:i/(B.length-1));
+  const pos={};
+  A.forEach((n,i)=>pos[n]={x:xa,y:ya(i),side:'a'});
+  B.forEach((n,i)=>pos[n]={x:xb,y:yb(i),side:'b'});
+  return pos;
+}
+function pairKey(p){ return p[0]+'→'+p[1]; }
+
+function drawMap(){
+  const {ctx,w,h}=fit($('mapCanvas')); ctx.clearRect(0,0,w,h);
+  const pos=layout(w,h), f=frames[idx], r=run();
+  // dead pairs so far (rejected or bumped up to this frame) — faint scars
+  const dead=new Set();
+  for(let i=0;i<=idx;i++){ frames[i].rejected.concat(frames[i].bumped).forEach(p=>dead.add(pairKey(p))); }
+  ctx.lineWidth=1;
+  dead.forEach(k=>{ const [a,b]=k.split('→'), P=pos[a], Q=pos[b];
+    ctx.strokeStyle='rgba(120,90,100,0.22)';ctx.setLineDash([3,5]);
+    ctx.beginPath();ctx.moveTo(P.x,P.y);ctx.lineTo(Q.x,Q.y);ctx.stroke();ctx.setLineDash([]); });
+  // engagements
+  const engaged=f?f.engaged:[];
+  engaged.forEach(p=>{ const P=pos[p[0]],Q=pos[p[1]];
+    ctx.strokeStyle=C('--pair');ctx.lineWidth=2.2;ctx.globalAlpha=.9;
+    ctx.beginPath();ctx.moveTo(P.x,P.y);ctx.lineTo(Q.x,Q.y);ctx.stroke();ctx.globalAlpha=1; });
+  if(f){
+    // this round's drama on top
+    f.accepted.forEach(p=>{ const P=pos[p[0]],Q=pos[p[1]];
+      ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.setLineDash([1,3]);
+      ctx.beginPath();ctx.moveTo(P.x,P.y);ctx.lineTo(Q.x,Q.y);ctx.stroke();ctx.setLineDash([]); });
+    f.rejected.concat(f.bumped).forEach(p=>{ const P=pos[p[0]],Q=pos[p[1]];
+      ctx.strokeStyle=C('--bad');ctx.lineWidth=1.6;ctx.setLineDash([5,4]);
+      ctx.beginPath();ctx.moveTo(P.x,P.y);ctx.lineTo(Q.x,Q.y);ctx.stroke();ctx.setLineDash([]); });
+  }
+  // who is matched right now
+  const now={}, fill={};
+  engaged.forEach(p=>{ now[p[0]]=(now[p[0]]||0)+1; fill[p[1]]=(fill[p[1]]||0)+1; });
+  const last=idx>=frames.length-1;
+  // a-side: circles
+  scen.sides.a.agents.forEach(n=>{
+    const P=pos[n], matched=(now[n]||0)>0, un=last&&!matched;
+    ctx.fillStyle=matched?C('--aCol'):'#22222e';
+    ctx.beginPath();ctx.arc(P.x,P.y,13,0,7);ctx.fill();
+    ctx.strokeStyle=un?C('--bad'):C('--aCol');ctx.lineWidth=un?2.6:1.5;ctx.stroke();
+    ctx.fillStyle=C('--ink');ctx.font='600 11px '+C('--mono');ctx.textAlign='right';
+    ctx.fillText(n,P.x-20,P.y+4);
+  });
+  // b-side: squares, filled by posts taken
+  scen.sides.b.agents.forEach(n=>{
+    const P=pos[n], cap=scen.sides.b.caps[n], k=fill[n]||0, s=13, frac=k/cap;
+    const un=last&&k===0;
+    ctx.fillStyle='#22222e';rr(ctx,P.x-s,P.y-s,2*s,2*s,5);ctx.fill();
+    if(frac>0){ ctx.fillStyle=C('--bCol');rr(ctx,P.x-s,P.y+s-2*s*frac,2*s,2*s*frac,4);ctx.fill(); }
+    ctx.strokeStyle=un?C('--bad'):C('--bCol');ctx.lineWidth=un?2.6:1.5;rr(ctx,P.x-s,P.y-s,2*s,2*s,5);ctx.stroke();
+    ctx.fillStyle=C('--ink');ctx.font='600 11px '+C('--mono');ctx.textAlign='left';
+    ctx.fillText(n,P.x+20,P.y+4);
+    if(cap>1){ ctx.fillStyle=C('--muted');ctx.font='10px '+C('--mono');
+      ctx.fillText(k+'/'+cap,P.x+20,P.y+17); }
+  });
+  ctx.textAlign='left';
+  // caption
+  if(!f){ $('mapCap').innerHTML=''; return; }
+  if(!last){
+    $('mapCap').innerHTML='round '+f.round+': <b>'+f.proposals.length+'</b> proposal'+(f.proposals.length===1?'':'s')
+      +' · '+f.accepted.length+' held · '+f.rejected.length+' rejected'
+      +(f.bumped.length?' · <b style="color:var(--bad)">'+f.bumped.length+' bumped</b>':'');
+  }else{
+    const un=run().unmatchedA.concat(run().unmatchedB);
+    $('mapCap').innerHTML='<b>stable</b> after '+run().rounds+' round'+(run().rounds===1?'':'s')
+      +' · '+engaged.length+' pair'+(engaged.length===1?'':'s')
+      +(un.length?' · <b style="color:var(--bad)">'+un.join(', ')+' unmatched</b>':' · everyone matched');
+  }
+}
+function rr(ctx,x,y,w,h,r){r=Math.min(r,h/2,w/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+// ---- panels ----
+function chipA(t){return '<span class="chip" style="background:var(--aCol)">'+t+'</span>';}
+function chipB(t){return '<span class="chip" style="background:var(--bCol)">'+t+'</span>';}
+
+function renderPairs(){
+  const r=run(), host=$('pairs'); host.innerHTML='';
+  scen.sides.a.agents.forEach(p=>{
+    const partners=r.matchA[p];
+    if(!partners.length){
+      host.insertAdjacentHTML('beforeend',
+        '<div class="mrow un"><span class="who">'+p+'</span><span class="arrow">·</span>unmatched</div>');
+      return;
+    }
+    partners.forEach((q,j)=>{
+      const ra=r.rankA[p][j], rb=r.rankB[q][r.matchB[q].indexOf(p)];
+      host.insertAdjacentHTML('beforeend',
+        '<div class="mrow"><span class="who" style="color:var(--aCol)">'+p+'</span>'
+        +'<span class="arrow">↔</span><span class="who" style="color:var(--bCol)">'+q+'</span>'
+        +'<span class="rk">'+chipA('#'+ra)+chipB('#'+rb)+'</span></div>');
+    });
+  });
+  const open=scen.sides.b.agents
+    .map(q=>[q,scen.sides.b.caps[q]-r.matchB[q].length]).filter(([,k])=>k>0);
+  $('slots').innerHTML=open.length
+    ?'<div class="slotnote">unfilled: '+open.map(([q,k])=>q+' ('+r.matchB[q].length+'/'+scen.sides.b.caps[q]+')').join(' · ')+'</div>':'';
+}
+
+function fmtRank(v){ return v==null?'—':(Math.round(v*100)/100); }
+function renderDir(){
+  const A=scen.sides.a.label, B=scen.sides.b.label;
+  let html='<tr><th>proposing</th><th class="r">'+A+' get</th><th class="r">'+B+' get</th></tr>';
+  for(const d of ['a','b']){
+    const rd=scen.runs[d], on=d===dir;
+    html+='<tr class="'+(on?'on':'off')+'"><td>'+(on?'<span class="dot"></span>':'')
+      +(d==='a'?A:B)+'</td><td class="r">#'+fmtRank(rd.avgRankA)+'</td><td class="r">#'+fmtRank(rd.avgRankB)+'</td></tr>';
+  }
+  $('dirtab').innerHTML=html;
+  $('stableline').innerHTML = scen.stable
+    ? 'this market has <b>'+scen.stable.count+'</b> stable matching'+(scen.stable.count===1?'':'s')
+      +(scen.stable.count>1?' — the algorithm picks the proposing side’s favourite':' — direction can’t matter')
+    : '';
+}
+
+function renderHonesty(){
+  if(!scen.strategy){ $('honesty').style.display='none'; return; }
+  $('honesty').style.display='';
+  const host=$('hlines'); host.innerHTML='';
+  const A=scen.sides.a.label.toLowerCase();
+  host.insertAdjacentHTML('beforeend',
+    '<div class="hline ok"><span class="mk">✓</span><span class="txt">Every '+A.slice(0,-1)
+    +' (proposing): <b>no list beats the truth</b> — strategy-proof, exhaustively.</span></div>');
+  scen.strategy.b.forEach(res=>{
+    if(res.gain){
+      host.insertAdjacentHTML('beforeend',
+        '<div class="hline lie"><span class="mk">✗</span><span class="txt"><b>'+res.agent
+        +'</b>: reporting <code>'+res.report.join(' › ')+'</code> lands <b>'+res.best
+        +'</b> instead of '+res.truthful+' — the lie pays.</span></div>');
+    }else{
+      host.insertAdjacentHTML('beforeend',
+        '<div class="hline ok"><span class="mk">✓</span><span class="txt"><b>'+res.agent
+        +'</b>: no profitable lie here.</span></div>');
+    }
+  });
+}
+
+// ---- transport ----
+let timer=null,gen=0;
+function seek(i){ idx=Math.max(0,Math.min(i,frames.length-1));$('scrub').value=idx;drawMap();updateTLabel(); }
+function stopPlay(){ playing=false;gen++;if(timer){clearTimeout(timer);timer=null;}$('playBtn').textContent='▶ Play'; }
+function startPlay(){ if(frames.length<2)return; gen++;const g=gen;if(timer)clearTimeout(timer);
+  if(idx>=frames.length-1)seek(0); playing=true;$('playBtn').textContent='❚❚ Pause';
+  const step=()=>{ if(g!==gen||!playing)return; if(idx>=frames.length-1){stopPlay();return;} seek(idx+1);timer=setTimeout(step,900); };
+  timer=setTimeout(step,900);
+}
+function togglePlay(){ if(playing)stopPlay();else startPlay(); }
+function updateTLabel(){
+  const f=frames[idx];
+  $('tlabel').innerHTML=f?('round <b>'+f.round+'</b>/'+frames.length):'';
+}
+
+// ---- live (Pyodide) ----
+const CORE_FILES=['__init__.py','domain.py','model.py','agents.py','analysis.py','protocol.py','domains.py','matching.py'];
+async function ensurePyodide(){
+  if(pyReady) return;
+  if(!window.loadPyodide){ await new Promise((res,rej)=>{const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);}); }
+  pyodide=await loadPyodide();
+  await pyodide.runPythonAsync(`import os\nos.makedirs('core',exist_ok=True)`);
+  for(const f of CORE_FILES){ const txt=await (await fetch('../core/'+f)).text(); pyodide.FS.writeFile('core/'+f,txt); }
+  pyReady=true;
+}
+async function runLive(){
+  const btn=$('runLive');
+  try{
+    btn.disabled=true; if(!pyReady) btn.textContent='Loading Python…';
+    await ensurePyodide(); btn.textContent='Run live ▶';
+    const n=+$('nSlider').value, seed=+$('sSlider').value;
+    const js=await pyodide.runPythonAsync(`
+import json
+from core.matching import random_market, evaluate
+a, b = random_market(${n}, ${seed})
+json.dumps(evaluate(a, b, stable=${n<=6?'True':'False'}))
+`);
+    const payload=JSON.parse(js);
+    scen={id:'live',label:'Live market',
+      blurb:'A random '+n+'×'+n+' market (seed '+seed+'), solved by the engine just now. '
+        +'Flip the proposing side and compare the average ranks — the proposer advantage shows up on almost every draw.',
+      ...payload};
+    $('blurb').innerHTML='<b>Live.</b> '+scen.blurb;
+    $('dirA').textContent=scen.sides.a.label+' propose';
+    $('dirB').textContent=scen.sides.b.label+' propose';
+    $('legA').textContent=scen.sides.a.label.toLowerCase();
+    $('legB').textContent=scen.sides.b.label.toLowerCase();
+    setDir(dir);
+  }catch(e){ console.error(e); }
+  finally{ btn.disabled=false; }
+}
+
+$('scenario').onchange=e=>{ setMode('play'); selectScenario(+e.target.value); };
+$('dirA').onclick=()=>setDir('a'); $('dirB').onclick=()=>setDir('b');
+$('playBtn').onclick=togglePlay;
+$('scrub').oninput=e=>{ stopPlay(); seek(+e.target.value); };
+$('nSlider').oninput=e=>{ $('nVal').textContent=e.target.value; $('nVal2').textContent=e.target.value; };
+$('sSlider').oninput=e=>$('sVal').textContent=e.target.value;
+$('runLive').onclick=runLive;
+$('modePlay').onclick=()=>setMode('play');
+$('modeLive').onclick=()=>setMode('live');
+window.addEventListener('resize',()=>{ if(scen) drawMap(); });
+function setMode(m){
+  if(m===mode) return;
+  mode=m;
+  $('modePlay').classList.toggle('on',m==='play'); $('modeLive').classList.toggle('on',m==='live');
+  ['nSlider','sSlider'].forEach(id=>$(id).disabled=m!=='live');
+  $('liveCtls').style.opacity=m==='live'?'1':'0.5';
+  $('runLive').style.display=m==='live'?'block':'none';
+  if(m==='play') selectScenario(+$('scenario').value);
+  else if(pyReady) runLive();
+}
+loadData();
+
+// ---- popovers ----
+const POP={
+  da:{title:'Deferred acceptance (Gale–Shapley, 1962)',html:`
+    <p>Every round, each unmatched proposer offers itself to the best partner it hasn't tried; each
+    receiver <b>tentatively</b> holds the best offers it has (up to its quota) and rejects the rest —
+    even breaking an earlier engagement for a better arrival.</p>
+    <p class="muted">Nothing is final until no one has anywhere left to propose. That deferral is the
+    whole trick: it lets early mistakes be undone, which is what guarantees stability.</p>`},
+  stable:{title:'Stability & blocking pairs',html:`
+    <p>A pair <b>blocks</b> a matching when both of them prefer each other to what the matching gave
+    them. A matching with no blocking pair is <b>stable</b>: nobody can find a willing partner for a
+    better deal.</p>
+    <p class="muted">Unstable matchings unravel in practice — exactly what happened to the US hospital
+    market in the 1940s, with offers creeping years ahead of graduation. Deferred acceptance always
+    ends stable.</p>`},
+  proposeropt:{title:'Proposer-optimality',html:`
+    <p>A market can have <b>many</b> stable matchings. Deferred acceptance lands on a very particular
+    one: every proposer gets the <b>best partner it has in any stable matching</b> — and, remarkably,
+    every receiver gets its <b>worst</b>.</p>
+    <p class="muted">So "who proposes" isn't etiquette, it's allocation. When the hospital match was
+    redesigned in 1997, switching to the <i>applicant</i>-proposing direction was the reform.</p>`},
+  onesided:{title:'One-sided strategy-proofness',html:`
+    <p>Under proposer-DA, no proposer can ever get a better partner by misreporting its list — truth
+    is a dominant strategy (Dubins–Freedman, Roth). Receivers enjoy no such guarantee: a receiver can
+    sometimes gain by <b>truncating</b> its list, rejecting someone it would honestly accept.</p>
+    <p class="muted">This demo proves both halves by brute force: it replays the market under every
+    list every agent could submit.</p>`},
+  rural:{title:'The rural hospital theorem',html:`
+    <p>Across <b>all</b> stable matchings of a market: the same agents are unmatched, every hospital
+    fills the same number of posts, and any hospital that ends under quota gets <b>exactly the same
+    residents</b> in every one (Roth, 1986).</p>
+    <p class="muted">So if the stable mechanism leaves rural posts empty, no other stable mechanism
+    can fill them — fixing it needs different incentives, not a different algorithm.</p>`},
+  nrmp:{title:'This runs the real world',html:`
+    <p>Deferred acceptance places tens of thousands of US medical graduates every year (the NRMP
+    "Match"), assigns students to public schools in New York and Boston, and underpins kidney
+    exchange design.</p>
+    <p class="muted">Shapley and Roth received the 2012 Nobel in economics for the theory and its
+    market designs. Not bad for an algorithm you can animate with five names.</p>`},
+};
+(function(){
+  const pop=$('pop'); let pinned=null;
+  function show(el){ const d=POP[el.dataset.pop]; if(!d) return;
+    pop.innerHTML='<h4>'+d.title+'</h4>'+d.html; pop.classList.add('show');
+    const r=el.getBoundingClientRect(),p=pop.getBoundingClientRect(),m=10;
+    let left=Math.max(m,Math.min(r.left+r.width/2-p.width/2,innerWidth-p.width-m));
+    let top=r.top-p.height-10; if(top<m) top=r.bottom+10;
+    pop.style.left=left+'px';pop.style.top=top+'px'; }
+  function hide(){ pop.classList.remove('show'); }
+  document.querySelectorAll('.x').forEach(el=>{
+    el.tabIndex=0; el.setAttribute('role','button');
+    el.addEventListener('mouseenter',()=>{ if(!pinned) show(el); });
+    el.addEventListener('mouseleave',()=>{ if(!pinned) hide(); });
+    el.addEventListener('focus',()=>{ if(!pinned) show(el); });
+    el.addEventListener('blur',()=>{ if(!pinned) hide(); });
+    el.addEventListener('click',e=>{ e.stopPropagation(); if(pinned===el){pinned=null;hide();}else{pinned=el;show(el);} });
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();} });
+  });
+  pop.addEventListener('click',e=>e.stopPropagation());
+  document.addEventListener('click',()=>{ if(pinned){pinned=null;hide();} });
+  addEventListener('keydown',e=>{ if(e.key==='Escape'&&pinned){pinned=null;hide();} });
+  addEventListener('scroll',()=>{ if(pinned) show(pinned); },true);
+})();
+</script>
+</body>
+</html>
