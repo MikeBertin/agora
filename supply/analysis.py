@@ -44,6 +44,11 @@ def compare(net: Network) -> dict:
 
     Efficiency is a single [0, 1] score where 1 means optimal: a welfare ratio
     when demand is elastic, otherwise a cost ratio (optimum cost / method cost).
+    A cost ratio only means anything when both methods serve the same demand, so
+    a method that leaves mandatory demand unserved scores 0 (its row also gets
+    ``feasible: False``). If the optimal welfare itself is not positive the
+    ratio's direction inverts, so efficiency is then 1 for methods matching the
+    optimum and None (undefined) otherwise.
     """
     # imported here to avoid a cycle: solvers import this module
     from .greedy import solve_greedy
@@ -62,18 +67,26 @@ def compare(net: Network) -> dict:
 
     rows = {}
     for name, r in methods.items():
-        if elastic:
+        mand_ok = all(r["unserved"][s.id] <= 1e-6
+                      for s in net.stores if s.mandatory)
+        if not mand_ok:
+            eff = 0.0  # served less than it had to; its cost/welfare is moot
+        elif elastic:
             denom = opt["welfare"]
-            eff = 1.0 if denom == 0 else r["welfare"] / denom
+            if denom > 0:
+                eff = min(1.0, r["welfare"] / denom)
+            else:
+                eff = 1.0 if abs(r["welfare"] - denom) <= 1e-6 else None
         else:
-            eff = 1.0 if r["cost"] == 0 else opt["cost"] / r["cost"]
+            eff = 1.0 if r["cost"] == 0 else min(1.0, opt["cost"] / r["cost"])
         rows[name] = {
             "cost": r["cost"],
             "welfare": r.get("welfare"),
             "pctServed": r.get("pctServed",
                                round(100.0 * sum(r["served"].values())
                                      / net.total_demand(), 2)),
-            "efficiency": round(eff, 4),
+            "feasible": mand_ok,
+            "efficiency": None if eff is None else round(eff, 4),
         }
 
     return {

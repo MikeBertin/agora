@@ -177,9 +177,13 @@
 
       <div class="panel">
         <h3 id="procTitle">Price discovery</h3>
-        <p class="psub" id="procSub">The market is an <span class="x" data-pop="auction">auction</span>: units
+        <p class="psub" id="procSubMkt">The market is an <span class="x" data-pop="auction">auction</span>: units
         of demand bid for capacity and prices climb until they hit the warehouses' rents — the same numbers the
         LP found.</p>
+        <p class="psub" id="procSubGrd" style="display:none">One shipment at a time, cheapest lane first — watch
+        the running total close on (or overshoot) the optimum's dashed line.</p>
+        <p class="psub" id="procSubOpt" style="display:none">The central planner doesn't iterate: the whole
+        allocation drops out of a single <span class="x" data-pop="transportation">linear program</span>.</p>
         <canvas id="procCanvas" height="190"></canvas>
         <div class="transport">
           <button id="playBtn">▶ Play</button>
@@ -331,10 +335,13 @@ function setMethod(m,keep){
   document.querySelectorAll('.srow').forEach(r=>r.classList.toggle('on',r.dataset.m===m));
   // pick frames for the process panel
   if(m==='market'){ frames=scen.methods.market.frames;
-    $('procTitle').textContent='Price discovery'; $('procSub').dataset.k='mkt'; }
+    $('procTitle').textContent='Price discovery'; }
   else if(m==='greedy'){ frames=scen.methods.greedy.frames;
     $('procTitle').textContent='Greedy, step by step'; }
   else { frames=[]; $('procTitle').textContent='Solved in one shot'; }
+  const subs={market:'procSubMkt',greedy:'procSubGrd',optimum:'procSubOpt'};
+  Object.values(subs).forEach(id=>$(id).style.display='none');
+  $(subs[m]).style.display='';
   idx=frames.length?frames.length-1:0;
   $('scrub').max=Math.max(0,frames.length-1); $('scrub').value=idx;
   $('playBtn').disabled=!frames.length;

@@ -11,7 +11,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from supply.analysis import compare, evaluate
 from supply.greedy import solve_greedy
 from supply.instances import bottleneck, myopia, regions, shortage
-from supply.market import solve_market
+from supply.market import solve_market, _downsample
+from supply.model import Lane, Network, Store, Warehouse
 from supply.solve import solve_optimum
 
 TOL = 1e-6
@@ -182,12 +183,85 @@ def test_compare():
     check("shortage: greedy efficiency is ~0.714", close(eff_s, 0.7143))
 
 
+def _raises(fn, exc):
+    try:
+        fn()
+    except exc:
+        return True
+    return False
+
+
+def test_model_validation():
+    """Node ids can't clash across kinds or contain the flow-key separator."""
+    check("warehouse/store id clash rejected", _raises(
+        lambda: Network("x", [Warehouse("A", "W", 5, 0, 0)],
+                        [Store("A", "S", 5, 1, 1)], []), AssertionError))
+    check("id containing '->' rejected", _raises(
+        lambda: Network("x", [Warehouse("W->1", "W", 5, 0, 0)],
+                        [Store("S", "S", 5, 1, 1)], []), AssertionError))
+
+
+def test_market_integer_guard():
+    """Fractional units must raise, not silently solve a different instance."""
+    frac = Network("frac", [Warehouse("W", "W", 10.5, 0, 0)],
+                   [Store("S", "S", 7, 1, 1)], [Lane("W", "S", 1)])
+    check("fractional capacity raises", _raises(lambda: solve_market(frac),
+                                                ValueError))
+    frac2 = Network("frac2", [Warehouse("W", "W", 10, 0, 0)],
+                    [Store("S", "S", 7.5, 1, 1)], [Lane("W", "S", 1)])
+    check("fractional demand raises", _raises(lambda: solve_market(frac2),
+                                              ValueError))
+
+
+def test_market_edge_guards():
+    """Zero-lane networks and tiny frame caps don't crash."""
+    lonely = Network("nolanes", [Warehouse("W", "W", 5, 0, 0)],
+                     [Store("S", "S", 5, 1, 1, value=3)], [])
+    r = solve_market(lonely)
+    check("zero-lane elastic market runs", r["served"]["S"] == 0)
+    check("downsample to 1 keeps the last frame",
+          _downsample([{"i": 1}, {"i": 2}, {"i": 3}], 1) == [{"i": 3}])
+
+
+def test_compare_stranded_demand():
+    """A method that strands mandatory demand scores 0, not >1."""
+    # Greedy grabs W1->S1 (cheapest) and strands S2, whose only route is W1.
+    net = Network("strand",
+                  [Warehouse("W1", "W1", 10, 0.2, 0.3),
+                   Warehouse("W2", "W2", 10, 0.8, 0.3)],
+                  [Store("S1", "S1", 10, 0.3, 0.7),
+                   Store("S2", "S2", 10, 0.7, 0.7)],
+                  [Lane("W1", "S1", 1), Lane("W1", "S2", 2), Lane("W2", "S1", 3)])
+    c = compare(net)
+    g = c["comparison"]["greedy"]
+    check("stranding greedy is marked infeasible", g["feasible"] is False)
+    check("stranding greedy efficiency is 0", g["efficiency"] == 0.0)
+    check("market still solves the stranding net",
+          c["comparison"]["market"]["efficiency"] == 1.0)
+
+
+def test_compare_nonpositive_welfare():
+    """Ratio direction is undefined when optimal welfare <= 0; don't invert."""
+    net = Network("mixed",
+                  [Warehouse("W1", "W1", 20, 0.2, 0.5, cost=5)],
+                  [Store("S1", "S1", 10, 0.5, 0.5),           # mandatory, dear
+                   Store("S2", "S2", 5, 0.8, 0.5, value=2)],  # elastic, cheap
+                  [Lane("W1", "S1", 5), Lane("W1", "S2", 1)])
+    c = compare(net)
+    for m, row in c["comparison"].items():
+        check(f"{m}: non-positive-welfare eff is 1.0 or None",
+              row["efficiency"] in (1.0, None))
+
+
 if __name__ == "__main__":
     for fn in [test_model, test_regions, test_bottleneck, test_shortage,
                test_market_matches_optimum, test_market_discovers_prices,
                test_market_frames, test_market_deterministic,
                test_evaluate, test_greedy_ties_on_easy, test_greedy_gap_welfare,
-               test_greedy_gap_cost, test_compare]:
+               test_greedy_gap_cost, test_compare,
+               test_model_validation, test_market_integer_guard,
+               test_market_edge_guards, test_compare_stranded_demand,
+               test_compare_nonpositive_welfare]:
         print(fn.__name__)
         fn()
     print("\nAll supply engine smoke tests passed.")

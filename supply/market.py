@@ -39,7 +39,19 @@ _DUMMY = -1  # the "stay unserved" outside option (elastic buyers only)
 
 def solve_market(net: Network, eps: Optional[float] = None,
                  max_frames: int = 120, max_rounds: int = 200000) -> dict:
-    """Run the auction to a clearing allocation; return it with playback frames."""
+    """Run the auction to a clearing allocation; return it with playback frames.
+
+    The unit disaggregation needs whole units: every demand and capacity must be
+    an integer (the LP and greedy handle fractional amounts; the auction cannot,
+    and truncating would silently solve a different instance).
+    """
+    for s in net.stores:
+        if s.demand != int(s.demand):
+            raise ValueError(f"market needs integer demand; {s.id} has {s.demand}")
+    for w in net.warehouses:
+        if w.capacity != int(w.capacity):
+            raise ValueError(f"market needs integer capacity; {w.id} has {w.capacity}")
+
     # --- disaggregate into unit buyers (demand) and unit objects (capacity)
     buyers = []   # each: (store_id, value_or_None, mandatory)
     for s in net.stores:
@@ -50,9 +62,9 @@ def solve_market(net: Network, eps: Optional[float] = None,
     nB, nK = len(buyers), len(obj_wh)
 
     # Big value so mandatory demand always prefers being served to anything.
-    big = 1.0 + max((s.value or 0) for s in net.stores) \
-        + max(w.cost for w in net.warehouses) \
-        + max(l.cost for l in net.lanes)
+    big = 1.0 + max(((s.value or 0) for s in net.stores), default=0) \
+        + max((w.cost for w in net.warehouses), default=0) \
+        + max((l.cost for l in net.lanes), default=0)
 
     def benefit(b: int, k: int) -> float:
         sid, val, mand = buyers[b]
@@ -121,6 +133,8 @@ def _downsample(frames: list, k: int) -> list:
     n = len(frames)
     if n <= k:
         return frames
+    if k < 2:
+        return frames[-1:]
     idx = sorted({round(i * (n - 1) / (k - 1)) for i in range(k)} | {n - 1})
     return [frames[i] for i in idx]
 

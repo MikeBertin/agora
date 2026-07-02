@@ -87,6 +87,12 @@ class Network:
     def _validate(self) -> None:
         assert len(self._wh) == len(self.warehouses), "duplicate warehouse id"
         assert len(self._st) == len(self.stores), "duplicate store id"
+        # ids are shared between node kinds nowhere: flows are keyed "src->dst"
+        # and the demo looks nodes up in one merged map.
+        clash = self._wh.keys() & self._st.keys()
+        assert not clash, f"id used by both a warehouse and a store: {clash}"
+        for nid in list(self._wh) + list(self._st):
+            assert "->" not in nid, f"node id {nid!r} may not contain '->'"
         for l in self.lanes:
             assert l.src in self._wh, f"lane from unknown warehouse {l.src!r}"
             assert l.dst in self._st, f"lane to unknown store {l.dst!r}"
