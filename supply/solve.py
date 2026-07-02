@@ -102,6 +102,10 @@ def solve_optimum(net: Network) -> dict:
               for sid, r in store_row.items()}
     rents = {wid: round(float(-res.ineqlin.marginals[r]), 6)
              for wid, r in wh_row.items()}
+    # capped lanes have a third dual: the rent on the lane's own capacity
+    # (marginal saving from one more unit of room on that lane)
+    lane_rents = {f"{l.src}->{l.dst}": round(float(-res.upper.marginals[lane_col[li]]), 6)
+                  for li, l in enumerate(lanes) if l.capacity is not None}
 
     out = {
         "method": "optimum",
@@ -113,6 +117,8 @@ def solve_optimum(net: Network) -> dict:
         "prices": prices,
         "rents": rents,
     }
+    if lane_rents:
+        out["laneRents"] = lane_rents
     if elastic:
         served_value = sum(net.store(s.id).value * served[s.id] for s in elastic)
         lost_value = sum(net.store(s.id).value * unserved[s.id] for s in elastic)

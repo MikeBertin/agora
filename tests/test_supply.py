@@ -273,6 +273,94 @@ def test_stranded_scenario():
           close(c["comparison"]["market"]["efficiency"], 1.0))
 
 
+def _capped_net():
+    """W1 is cheap for S1 but that lane is capped at 10; everything else costs 5.
+
+    Hand check: the 10 capped units ship at 1, the other 30 units at 5 each ->
+    optimum 160. One more unit of room on the capped lane would swap a 5 for a
+    1, so the lane's rent is 4.
+    """
+    return Network("capped",
+                   [Warehouse("W1", "W1", 20, 0.2, 0.3),
+                    Warehouse("W2", "W2", 20, 0.8, 0.3)],
+                   [Store("S1", "S1", 20, 0.3, 0.7),
+                    Store("S2", "S2", 20, 0.7, 0.7)],
+                   [Lane("W1", "S1", 1, capacity=10), Lane("W1", "S2", 5),
+                    Lane("W2", "S1", 5), Lane("W2", "S2", 5)])
+
+
+def test_lane_capacity_optimum():
+    """The LP honours lane caps and prices the capped lane's scarcity."""
+    r = solve_optimum(_capped_net())
+    check("capped optimum cost is 160", close(r["cost"], 160))
+    check("capped optimum fills the capped lane exactly",
+          close(r["flow"]["W1->S1"], 10))
+    check("capped lane earns rent 4", close(r["laneRents"]["W1->S1"], 4))
+    check("uncapped lanes report no lane rent", list(r["laneRents"]) == ["W1->S1"])
+
+
+def test_lane_capacity_market():
+    """The auction honours lane caps and still reaches the LP optimum."""
+    net = _capped_net()
+    opt, mkt = solve_optimum(net), solve_market(net)
+    check("capped market is feasible", mkt["feasible"])
+    check("capped market cost equals optimum", close(mkt["cost"], opt["cost"]))
+    check("capped market respects the lane cap",
+          mkt["flow"].get("W1->S1", 0) <= 10 + TOL)
+    check("capped market reports per-lane prices", "lanePrice" in mkt)
+    check("capped lane's market price is warehouse rent + lane rent",
+          abs(mkt["lanePrice"]["W1->S1"]
+              - (opt["rents"]["W1"] + opt["laneRents"]["W1->S1"])) <= 0.1)
+    check("uncapped lanes clear at their (zero) rent",
+          all(v <= 0.1 for k, v in mkt["lanePrice"].items() if k != "W1->S1"))
+
+
+def test_lane_capacity_greedy():
+    """Greedy ships no more than a lane's cap (shortage with the cheap lane capped)."""
+    net = shortage()
+    net.lane("W1", "S2").capacity = 5
+    g = solve_greedy(net)
+    check("greedy respects the lane cap", g["flow"].get("W1->S2", 0) <= 5 + TOL)
+    opt, mkt = solve_optimum(net), solve_market(net)
+    check("capped shortage: optimum welfare is 130", close(opt["welfare"], 130))
+    check("capped shortage: market matches the optimum",
+          close(mkt["welfare"], opt["welfare"]))
+
+
+def test_capped_path_matches_uncapped():
+    """Huge lane caps engage the slot/phantom reduction but change nothing."""
+    plain = regions()
+    caps = regions()
+    for l in caps.lanes:
+        l.capacity = 999
+    a, b = solve_market(plain), solve_market(caps)
+    check("phantom path reaches the same cost", close(a["cost"], b["cost"]))
+    check("phantom path serves the same demand",
+          all(close(a["served"][s], b["served"][s]) for s in a["served"]))
+    rents = solve_optimum(plain)["rents"]
+    check("phantom path still discovers the rents",
+          all(abs(b["warehousePrice"][w] - rents[w]) <= 0.1 for w in rents))
+
+
+def test_market_fractional_lane_cap():
+    net = regions()
+    net.lane("W1", "S1").capacity = 2.5
+    check("fractional lane capacity raises",
+          _raises(lambda: solve_market(net), ValueError))
+
+
+def test_market_reachability_bailout():
+    """Too little capacity reachable via a store's lanes: bail, don't spin."""
+    net = Network("unreach",
+                  [Warehouse("W1", "W1", 5, 0.2, 0.3),
+                   Warehouse("W2", "W2", 10, 0.8, 0.3)],
+                  [Store("S1", "S1", 10, 0.5, 0.7)],
+                  [Lane("W1", "S1", 1)])  # W2 can't reach S1: only 5 reachable
+    r = solve_market(net)
+    check("unreachable mandatory demand is infeasible", r["feasible"] is False)
+    check("bailout happens before any bidding", r["rounds"] == 0)
+
+
 def test_compare_nonpositive_welfare():
     """Ratio direction is undefined when optimal welfare <= 0; don't invert."""
     net = Network("mixed",
@@ -294,7 +382,11 @@ if __name__ == "__main__":
                test_greedy_frames, test_greedy_gap_cost, test_compare,
                test_model_validation, test_market_integer_guard,
                test_market_edge_guards, test_compare_stranded_demand,
-               test_stranded_scenario, test_compare_nonpositive_welfare]:
+               test_stranded_scenario,
+               test_lane_capacity_optimum, test_lane_capacity_market,
+               test_lane_capacity_greedy, test_capped_path_matches_uncapped,
+               test_market_fractional_lane_cap, test_market_reachability_bailout,
+               test_compare_nonpositive_welfare]:
         print(fn.__name__)
         fn()
     print("\nAll supply engine smoke tests passed.")
