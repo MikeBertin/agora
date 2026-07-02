@@ -50,15 +50,8 @@ _NEG = float("-inf")
 _DUMMY = -1  # the "stay unserved" outside option (elastic buyers only)
 
 
-def solve_market(net: Network, eps: Optional[float] = None,
-                 max_frames: int = 120, max_rounds: int = 200000) -> dict:
-    """Run the auction to a clearing allocation; return it with playback frames.
-
-    The unit disaggregation needs whole units: every demand, capacity and finite
-    lane capacity must be an integer (the LP and greedy handle fractional
-    amounts; the auction cannot, and truncating would silently solve a
-    different instance).
-    """
+def _validate_units(net: Network) -> None:
+    """The unit disaggregation needs whole units everywhere."""
     for s in net.stores:
         if s.demand != int(s.demand):
             raise ValueError(f"market needs integer demand; {s.id} has {s.demand}")
@@ -70,10 +63,17 @@ def solve_market(net: Network, eps: Optional[float] = None,
             raise ValueError(f"market needs integer lane capacity; "
                              f"{l.src}->{l.dst} has {l.capacity}")
 
-    capped = any(l.capacity is not None for l in net.lanes)
 
-    # --- disaggregate into unit buyers (demand) and unit objects (capacity)
-    buyers = []   # each: (store_id, value_or_None, mandatory, phantom_warehouse)
+def _disaggregate(net: Network):
+    """Unit buyers and unit objects, shared by both auction variants.
+
+    Returns (buyers, obj_wh, obj_st, slots_to, capped) where each buyer is
+    (store_id, value_or_None, mandatory, phantom_warehouse), obj_st[k] is the
+    one store object k may serve (None: any the lanes allow) and slots_to is
+    the reachable capacity per store.
+    """
+    capped = any(l.capacity is not None for l in net.lanes)
+    buyers = []
     for s in net.stores:
         buyers += [(s.id, s.value, s.mandatory, None)] * int(s.demand)
 
@@ -98,12 +98,38 @@ def solve_market(net: Network, eps: Optional[float] = None,
             for l in net.lanes_from(w.id):
                 slots_to[l.dst] += int(min(w.capacity, net.store(l.dst).demand))
         obj_st = [None] * len(obj_wh)
-    nB, nK = len(buyers), len(obj_wh)
+    return buyers, obj_wh, obj_st, slots_to, capped
 
-    # Big value so mandatory demand always prefers being served to anything.
-    big = 1.0 + max(((s.value or 0) for s in net.stores), default=0) \
+
+def _big_value(net: Network) -> float:
+    """A value so large mandatory demand always prefers being served."""
+    return 1.0 + max(((s.value or 0) for s in net.stores), default=0) \
         + max((w.cost for w in net.warehouses), default=0) \
         + max((l.cost for l in net.lanes), default=0)
+
+
+def _infeasible(net: Network, slots_to: dict) -> bool:
+    """Mandatory demand that can never be served: capacity short overall, or
+    too little reachable via some store's lanes."""
+    mand_units = sum(int(s.demand) for s in net.stores if s.mandatory)
+    total_cap = sum(int(w.capacity) for w in net.warehouses)
+    return mand_units > total_cap or any(
+        s.mandatory and int(s.demand) > slots_to[s.id] for s in net.stores)
+
+
+def solve_market(net: Network, eps: Optional[float] = None,
+                 max_frames: int = 120, max_rounds: int = 200000) -> dict:
+    """Run the auction to a clearing allocation; return it with playback frames.
+
+    The unit disaggregation needs whole units: every demand, capacity and finite
+    lane capacity must be an integer (the LP and greedy handle fractional
+    amounts; the auction cannot, and truncating would silently solve a
+    different instance).
+    """
+    _validate_units(net)
+    buyers, obj_wh, obj_st, slots_to, capped = _disaggregate(net)
+    nB, nK = len(buyers), len(obj_wh)
+    big = _big_value(net)
 
     def benefit(b: int, k: int) -> float:
         sid, val, mand, ph = buyers[b]
@@ -121,13 +147,8 @@ def solve_market(net: Network, eps: Optional[float] = None,
     if eps is None:
         eps = 1.0 / (nB + 1)  # < 1/n => optimal for integer benefits
 
-    # Mandatory demand that can never be served — capacity short overall, or
-    # too little reachable via a store's lanes — would bid up to max_rounds;
-    # bail out instead of letting the never-placeable buyers spin.
-    mand_units = sum(int(s.demand) for s in net.stores if s.mandatory)
-    total_cap = sum(int(w.capacity) for w in net.warehouses)
-    if mand_units > total_cap or any(
-            s.mandatory and int(s.demand) > slots_to[s.id] for s in net.stores):
+    # Never-serveable mandatory demand would bid up to max_rounds; bail out.
+    if _infeasible(net, slots_to):
         return _result(net, buyers, obj_wh, obj_st,
                        [None] * nB, [0.0] * nK, [], 0, eps, capped)
 

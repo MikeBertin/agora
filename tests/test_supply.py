@@ -10,10 +10,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from supply.analysis import compare, evaluate
 from supply.greedy import solve_greedy
-from supply.instances import (SCENARIOS, bottleneck, myopia, regions,
-                              shortage, stranded)
+from supply.instances import (SCENARIOS, bottleneck, myopia, random_network,
+                              regions, shortage, stranded)
 from supply.market import solve_market, _downsample
 from supply.model import Lane, Network, Store, Warehouse
+from supply.scale import solve_market_scaled
 from supply.solve import solve_optimum
 
 TOL = 1e-6
@@ -361,6 +362,53 @@ def test_market_reachability_bailout():
     check("bailout happens before any bidding", r["rounds"] == 0)
 
 
+def _obj(r):
+    return r["welfare"] if "welfare" in r else r["cost"]
+
+
+def test_scaled_matches_optimum():
+    """The ε-scaled sequential auction reaches the LP optimum everywhere."""
+    for build in (regions, bottleneck, shortage, myopia, stranded, _capped_net):
+        net = build()
+        opt, mkt = solve_optimum(net), solve_market_scaled(net)
+        check(f"{net.name}: scaled market matches the optimum",
+              close(_obj(mkt), _obj(opt)))
+        check(f"{net.name}: scaled market serves the same demand",
+              all(close(opt["served"][s], mkt["served"][s])
+                  for s in opt["served"]))
+    mkt = solve_market_scaled(_capped_net())
+    check("scaled market respects the lane cap",
+          mkt["flow"].get("W1->S1", 0) <= 10 + TOL)
+
+
+def test_scaled_random_instances():
+    """Random mixed mandatory/elastic instances: still exactly optimal."""
+    for seed in (3, 11):
+        net = random_network(5, 8, seed)
+        opt = solve_optimum(net)
+        check(f"random #{seed} is feasible", opt["feasible"])
+        mkt = solve_market_scaled(net)
+        check(f"random #{seed}: scaled market matches the optimum",
+              close(_obj(mkt), _obj(opt)))
+
+
+def test_scaled_shape():
+    """Result shape: same contract as solve_market, minus the playback."""
+    r = solve_market_scaled(bottleneck())
+    check("scaled reports its method", r["method"] == "market-scaled")
+    check("scaled ran multiple ε phases", r["phases"] > 1)
+    check("scaled has no playback frames", r["frames"] == [])
+    check("scaled is deterministic",
+          solve_market_scaled(bottleneck())["bids"] == r["bids"])
+    unreach = Network("unreach",
+                      [Warehouse("W1", "W1", 5, 0.2, 0.3),
+                       Warehouse("W2", "W2", 10, 0.8, 0.3)],
+                      [Store("S1", "S1", 10, 0.5, 0.7)],
+                      [Lane("W1", "S1", 1)])
+    check("scaled bails out on unreachable mandatory demand",
+          solve_market_scaled(unreach)["feasible"] is False)
+
+
 def test_compare_nonpositive_welfare():
     """Ratio direction is undefined when optimal welfare <= 0; don't invert."""
     net = Network("mixed",
@@ -386,7 +434,8 @@ if __name__ == "__main__":
                test_lane_capacity_optimum, test_lane_capacity_market,
                test_lane_capacity_greedy, test_capped_path_matches_uncapped,
                test_market_fractional_lane_cap, test_market_reachability_bailout,
-               test_compare_nonpositive_welfare]:
+               test_scaled_matches_optimum, test_scaled_random_instances,
+               test_scaled_shape, test_compare_nonpositive_welfare]:
         print(fn.__name__)
         fn()
     print("\nAll supply engine smoke tests passed.")

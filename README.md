@@ -64,14 +64,16 @@ core/                 # reusable pure-Python engine (no dependencies)
   dcop.py             #   graph colouring via DSA and MGM
 supply/               # logistics allocation engine (needs scipy; not in browser)
   model.py            #   transportation network: warehouses, stores, lanes
-  instances.py        #   five hand-checkable logistics scenarios
-  solve.py            #   central LP optimum + dual shadow prices (scipy/HiGHS)
+  instances.py        #   five hand-checkable scenarios + a random generator
+  solve.py            #   central LP optimum + dual prices/rents (scipy/HiGHS)
   market.py           #   auction algorithm -> allocation + clearing prices
+  scale.py            #   ε-scaled sequential auction: the market at scale
   greedy.py           #   myopic cheapest-lane baseline
   analysis.py         #   score any flow + three-way efficiency comparison
 experiments/          # one runner per demo; each writes docs/data/*.json
   run.py  run_auctions.py  run_voting.py  run_dcop.py   # + mirror core/ into docs/
   run_supply.py       # writes docs/data/supply.json (playback-only; needs venv)
+  bench_supply.py     # scale benchmark: LP vs ε-scaled vs synchronous auction
 docs/                  # static site (served by GitHub Pages from /docs)
   index.html          #   landing
   negotiation/ auctions/ voting/ dcop/   # the demos (Canvas viz + Pyodide live)
@@ -79,7 +81,7 @@ docs/                  # static site (served by GitHub Pages from /docs)
   data/               #   precomputed traces + manifests
   core/               #   copy of the engine, fetched by Pyodide
 tests/test_core.py    # engine smoke tests (37 checks)
-tests/test_supply.py  # supply engine smoke tests (needs venv; 84 checks)
+tests/test_supply.py  # supply engine smoke tests (needs venv; 131 checks)
 ```
 
 The `core/` engine is deliberately dependency-free and small enough that exact
@@ -88,8 +90,12 @@ auction equilibria are enumerated/closed-form). The `supply/` package is where
 the `auctions` (mechanism design) and `dcop` (decentralised allocation) threads
 are carried forward into a real resource-allocation engine: it solves the
 logistics transportation problem as a central LP, as a decentralised auction
-market, and greedily — then measures the efficiency gap between them. It is the
-one engine that needs a third-party solver (scipy), so unlike the other four it
+market, and greedily — then measures the efficiency gap between them. The
+market handles lane capacities (per-lane slot pools with phantom buyers), and
+an ε-scaled sequential variant (`supply/scale.py`) reaches the same optimum on
+thousand-unit instances in milliseconds where the synchronous auction would
+take minutes (`experiments/bench_supply.py` has the receipts). It is the one
+engine that needs a third-party solver (scipy), so unlike the other four it
 runs offline only, not live in the browser.
 
 ## Running it

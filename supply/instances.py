@@ -7,6 +7,7 @@ rates rarely match the crow-flies distance.
 """
 from __future__ import annotations
 
+import random
 from typing import Dict, List, Tuple
 
 from .model import Lane, Network, Store, Warehouse
@@ -121,6 +122,57 @@ def stranded() -> Network:
         ("W2", "S1"): 3,               # the Coastal DC cannot reach the Valley
     }
     return Network("Stranded store", warehouses, stores, _lanes(costs))
+
+
+def random_network(m: int, n: int, seed: int,
+                   demand: Tuple[int, int] = (10, 30),
+                   elastic_share: float = 0.25,
+                   headroom: float = 1.25,
+                   density: float = 0.7,
+                   cost: Tuple[int, int] = (1, 20)) -> Network:
+    """A random instance for benchmarks and stress tests, deterministic per seed.
+
+    Integer costs and units throughout (the auction's ε-optimality guarantee
+    needs integers). Total capacity is ``headroom`` × total demand, spread
+    unevenly over ``m`` warehouses; each of the ``n`` stores is elastic with
+    probability ``elastic_share``; lanes exist with probability ``density``,
+    topped up so every mandatory store can reach enough capacity. Deeper
+    (Hall-type) infeasibility is still possible but rare — check the LP's
+    ``feasible`` flag if it matters.
+    """
+    rng = random.Random(seed)
+    stores = []
+    for j in range(n):
+        val = rng.randint(5, 30) if rng.random() < elastic_share else None
+        stores.append(Store(f"S{j+1}", f"Store {j+1}", rng.randint(*demand),
+                            round(rng.random(), 3), round(rng.random(), 3),
+                            value=val))
+    total = sum(int(s.demand) for s in stores)
+    base = max(1, int(headroom * total / m))
+    caps = [rng.randint(max(1, int(0.7 * base)), int(1.3 * base) + 1)
+            for _ in range(m)]
+    caps[0] += max(0, total - sum(caps))  # never less capacity than demand
+    warehouses = [Warehouse(f"W{i+1}", f"DC {i+1}", caps[i],
+                            round(rng.random(), 3), round(rng.random(), 3),
+                            cost=rng.randint(0, 3))
+                  for i in range(m)]
+    lanes = {}
+    for w in warehouses:
+        for s in stores:
+            if rng.random() < density:
+                lanes[(w.id, s.id)] = Lane(w.id, s.id, rng.randint(*cost))
+    for s in stores:  # top up reachability for mandatory demand
+        if not s.mandatory:
+            continue
+        reach = lambda: sum(w.capacity for w in warehouses
+                            if (w.id, s.id) in lanes)
+        pool = [w for w in warehouses if (w.id, s.id) not in lanes]
+        rng.shuffle(pool)
+        while reach() < s.demand and pool:
+            w = pool.pop()
+            lanes[(w.id, s.id)] = Lane(w.id, s.id, rng.randint(*cost))
+    return Network(f"random {m}x{n} #{seed}", warehouses, stores,
+                   list(lanes.values()))
 
 
 SCENARIOS = [
