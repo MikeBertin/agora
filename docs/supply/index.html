@@ -147,7 +147,8 @@
         <h3>The shipping network</h3>
         <p class="psub"><b style="color:var(--wh)">Warehouses</b> (squares, filled by how much capacity is
         used) ship to <b style="color:var(--store)">stores</b> (circles, filled by how much demand is met).
-        Lane thickness is the units shipped; a <b style="color:var(--bad)">red ring</b> is unmet demand.</p>
+        Lane thickness is the units shipped; a <b style="color:var(--bad)">red ring</b> is unmet demand.
+        For the market and greedy, the timeline replays the allocation <b>forming</b> right here on the map.</p>
         <canvas id="mapCanvas" height="430"></canvas>
         <div class="legend">
           <span><i class="sw" style="background:var(--wh)"></i>warehouse</span>
@@ -249,8 +250,14 @@ function fit(cv){const dpr=window.devicePixelRatio||1,w=cv.clientWidth;
   cv.width=w*dpr;cv.height=h*dpr;const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return{ctx,w,h};}
 
 // ---- map ----
-function flowStats(m){
-  const f=scen.methods[m].flow, net=scen.network;
+// The flow the map shows: the scrubbed frame's snapshot while replaying the
+// market or greedy process, the final allocation otherwise.
+function flowAt(){
+  if(frames.length && frames[idx].flow) return frames[idx].flow;
+  return scen.methods[method].flow;
+}
+function flowStats(f){
+  const net=scen.network;
   const served={}, used={};
   net.stores.forEach(s=>served[s.id]=0); net.warehouses.forEach(w=>used[w.id]=0);
   for(const key in f){ const [w,s]=key.split('->'); served[s]+=f[key]; used[w]+=f[key]; }
@@ -258,9 +265,10 @@ function flowStats(m){
 }
 function drawMap(){
   const {ctx,w,h}=fit($('mapCanvas')); ctx.clearRect(0,0,w,h);
-  const {f,served,used,net}=flowStats(method);
+  const {f,served,used,net}=flowStats(flowAt());
   const pad=46, X=x=>pad+(w-2*pad)*x, Y=y=>pad+(h-2*pad)*y;
-  const maxF=Math.max(1,...Object.values(f));
+  // scale lane thickness to the final allocation so lanes grow as it forms
+  const maxF=Math.max(1,...Object.values(scen.methods[method].flow),...Object.values(f));
   const byId={}; net.warehouses.forEach(o=>byId[o.id]=o); net.stores.forEach(o=>byId[o.id]=o);
   // faint all lanes
   net.lanes.forEach(l=>{ const a=byId[l.src],b=byId[l.dst];
@@ -291,8 +299,17 @@ function drawMap(){
     ctx.fillStyle=C('--muted');ctx.font='10px '+C('--mono');
     ctx.fillText(served[o.id]+'/'+o.demand+(o.value!=null?(' · £'+o.value):''),x,y+r+15);
   });
-  // caption
+  // caption: running numbers mid-replay, the verdict at the end
   const cmp=scen.comparison[method], obj=scen.objective;
+  if(frames.length && idx<frames.length-1){
+    const fr=frames[idx];
+    const run=obj==='welfare'?('welfare so far <b>'+(fr.welfare==null?0:fr.welfare)+'</b>')
+                             :('cost so far <b>'+fr.cost+'</b>');
+    $('mapCap').innerHTML=method==='market'
+      ?(MLABEL[method]+' · round '+fr.round+': '+run+' · '+fr.assigned+' placed, '+fr.bidding+' bidding')
+      :(MLABEL[method]+' · step '+fr.step+': +'+fr.qty+' on '+fr.lane.replace('->',' → ')+' · '+run);
+    return;
+  }
   const main=obj==='welfare'?('welfare <b>'+cmp.welfare+'</b>'):('cost <b>'+cmp.cost+'</b>');
   $('mapCap').innerHTML=MLABEL[method]+': '+main+' · '+cmp.pctServed+'% served'
     +(method!=='optimum'?(' · '+pct(cmp.efficiency)+' of optimum'):'');
@@ -414,7 +431,7 @@ function updateTLabel(){
 
 // ---- transport ----
 let timer=null,gen=0;
-function seek(i){ idx=Math.max(0,Math.min(i,frames.length-1));$('scrub').value=idx;drawProc();updateTLabel(); }
+function seek(i){ idx=Math.max(0,Math.min(i,frames.length-1));$('scrub').value=idx;drawMap();drawProc();updateTLabel(); }
 function stopPlay(){ playing=false;gen++;if(timer){clearTimeout(timer);timer=null;}$('playBtn').textContent='▶ Play'; }
 function startPlay(){ if(!frames.length)return; gen++;const g=gen;if(timer)clearTimeout(timer);
   if(idx>=frames.length-1)seek(0); playing=true;$('playBtn').textContent='❚❚ Pause';

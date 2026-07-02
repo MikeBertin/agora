@@ -123,6 +123,9 @@ def test_market_frames():
     last = mkt["frames"][-1]
     check("final frame agrees with the result cost", close(last["cost"], mkt["cost"]))
     check("final frame leaves no one still bidding", last["bidding"] == 0)
+    check("every frame carries a flow snapshot",
+          all("flow" in f for f in mkt["frames"]))
+    check("final frame flow equals the result flow", last["flow"] == mkt["flow"])
 
 
 def test_market_deterministic():
@@ -157,6 +160,19 @@ def test_greedy_gap_welfare():
     g = solve_greedy(net)
     check("greedy shortage welfare is 100 (vs optimum 140)", close(g["welfare"], 100))
     check("greedy shortage cost is 60", close(g["cost"], 60))
+
+
+def test_greedy_frames():
+    """Greedy frames snapshot the cumulative flow, one shipment at a time."""
+    g = solve_greedy(myopia())
+    check("greedy has one frame per shipment", len(g["frames"]) >= 2)
+    check("greedy frames carry a flow snapshot",
+          all("flow" in f for f in g["frames"]))
+    check("greedy frame flows grow monotonically",
+          all(sum(a["flow"].values()) <= sum(b["flow"].values())
+              for a, b in zip(g["frames"], g["frames"][1:])))
+    check("greedy final frame flow equals the result flow",
+          g["frames"][-1]["flow"] == g["flow"])
 
 
 def test_greedy_gap_cost():
@@ -275,7 +291,7 @@ if __name__ == "__main__":
                test_market_matches_optimum, test_market_discovers_prices,
                test_market_frames, test_market_deterministic,
                test_evaluate, test_greedy_ties_on_easy, test_greedy_gap_welfare,
-               test_greedy_gap_cost, test_compare,
+               test_greedy_frames, test_greedy_gap_cost, test_compare,
                test_model_validation, test_market_integer_guard,
                test_market_edge_guards, test_compare_stranded_demand,
                test_stranded_scenario, test_compare_nonpositive_welfare]:

@@ -178,6 +178,7 @@ def _frame(net, buyers, obj_wh, held, price, rnd):
     cost, served_value, elastic = _cost_welfare(net, flow, served)
     return {
         "round": rnd,
+        "flow": {k: round(v, 6) for k, v in flow.items()},
         "assigned": sum(1 for k in held if k is not None and k != _DUMMY),
         "unserved": sum(1 for k in held if k == _DUMMY),
         "bidding": sum(1 for k in held if k is None),

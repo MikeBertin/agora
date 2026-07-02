@@ -46,6 +46,7 @@ def solve_greedy(net: Network) -> dict:
             "step": len(frames) + 1,
             "lane": f"{l.src}->{l.dst}",
             "qty": qty,
+            "flow": {k: round(v, 6) for k, v in flow.items()},
             "cost": step["cost"],
             "welfare": step.get("welfare"),
         })
