@@ -8,26 +8,29 @@ MSc module (COMP6203) — automated **negotiation**, **auctions**, **voting** an
 distributed **optimisation** — as interactive, self-contained web demos backed
 by a small, reusable Python engine.
 
+[![Six interactive multi-agent demos — negotiation, auctions, voting, distributed optimisation, supply allocation and matching markets](docs/demo.gif)](https://mikebertin.github.io/agora/)
+
 🔗 **[Live site](https://mikebertin.github.io/agora/)**
 
-Unlike a pure-JavaScript toy, the negotiation logic lives in a real Python
-package (`core/`). The same code runs two ways:
+Unlike a pure-JavaScript toy, the logic lives in a real Python package
+(`core/`). The same code runs two ways:
 
-- **offline**, to precompute negotiation traces the site plays back instantly, and
-- **live in your browser**, via [Pyodide](https://pyodide.org) — the demo runs
-  the actual Python engine in WebAssembly so you can change parameters and
-  re-run with no server.
+- **offline**, to precompute the traces the site plays back instantly, and
+- **live in your browser**, via [Pyodide](https://pyodide.org) — five of the
+  six demos run the actual Python engine in WebAssembly so you can change
+  parameters and re-run with no server (supply is the exception: its LP
+  solver can't run in the browser).
 
 ## The demos
 
 | | | |
 |---|---|---|
-| **[Negotiation](docs/negotiation/)** | Bilateral bargaining | A candidate and an employer haggle over a five-issue job offer under a deadline. Watch the bidding dance against the exact Pareto frontier, the concession curves, and a frequency model learning the opponent's hidden priorities. **Built.** |
-| **[Auctions](docs/auctions/)** | Mechanism design | English / Vickrey / first-price / Dutch auctions under independent private values; bid shading, the revenue-equivalence theorem converging live, and the same-mean/different-variance revenue distribution. **Built.** |
-| **[Voting](docs/voting/)** | Social choice | Plurality, Borda, instant-runoff and Condorcet over curated profiles (spoiler, the Condorcet paradox, and a profile where all four rules disagree), with a live majority graph. **Built.** |
-| **[Distributed optimisation](docs/dcop/)** | DCOP | Graph colouring as decentralised resource allocation: autonomous agents resolve conflicts with only local information via DSA and MGM. **Built.** |
-| **[Supply allocation](docs/supply/)** | Logistics / network flow | The transportation problem solved three ways — a central LP optimum, an auction-algorithm market where demand bids for capacity, and a greedy baseline — compared on cost, welfare and the efficiency gap. The market reaches the optimum *and* rediscovers its dual prices by bidding. **Built.** |
-| **[Matching markets](docs/matching/)** | Market design | Gale–Shapley deferred acceptance, animated: proposals, tentative engagements and rejection cascades, one-to-one and hospitals/residents with quotas. Proposer-optimality, one-sided strategy-proofness and the rural hospital theorem are *proved on each instance* — by enumerating every stable matching and brute-forcing every possible misreport. **Built.** |
+| **[Negotiation](docs/negotiation/)** | Bilateral bargaining | A candidate and an employer haggle over a five-issue job offer under a deadline. Watch the bidding dance against the exact Pareto frontier, the concession curves, and a frequency model learning the opponent's hidden priorities. |
+| **[Auctions](docs/auctions/)** | Mechanism design | English / Vickrey / first-price / Dutch auctions under independent private values; bid shading, the revenue-equivalence theorem converging live, and the same-mean/different-variance revenue distribution. |
+| **[Voting](docs/voting/)** | Social choice | Plurality, Borda, instant-runoff and Condorcet over curated profiles (spoiler, the Condorcet paradox, and a profile where all four rules disagree), with a live majority graph. |
+| **[Distributed optimisation](docs/dcop/)** | DCOP | Graph colouring as decentralised resource allocation: autonomous agents resolve conflicts with only local information via DSA and MGM. |
+| **[Supply allocation](docs/supply/)** | Logistics / network flow | The transportation problem solved three ways — a central LP optimum, an auction-algorithm market where demand bids for capacity, and a greedy baseline — compared on cost, welfare and the efficiency gap. The market reaches the optimum *and* rediscovers its dual prices by bidding. |
+| **[Matching markets](docs/matching/)** | Market design | Gale–Shapley deferred acceptance, animated: proposals, tentative engagements and rejection cascades, one-to-one and hospitals/residents with quotas. Proposer-optimality, one-sided strategy-proofness and the rural hospital theorem are *proved on each instance* — by enumerating every stable matching and brute-forcing every possible misreport. |
 
 ## The negotiation agents
 
@@ -83,7 +86,7 @@ docs/                  # static site (served by GitHub Pages from /docs)
   supply/             #   supply demo (Canvas viz, precomputed playback)
   data/               #   precomputed traces + manifests
   core/               #   copy of the engine, fetched by Pyodide
-tests/test_core.py    # engine smoke tests (37 checks)
+tests/test_core.py    # engine smoke tests (75 checks)
 tests/test_supply.py  # supply engine smoke tests (needs venv; 131 checks)
 ```
 
@@ -98,7 +101,7 @@ market handles lane capacities (per-lane slot pools with phantom buyers), and
 an ε-scaled sequential variant (`supply/scale.py`) reaches the same optimum on
 thousand-unit instances in milliseconds where the synchronous auction would
 take minutes (`experiments/bench_supply.py` has the receipts). It is the one
-engine that needs a third-party solver (scipy), so unlike the other four it
+engine that needs a third-party solver (scipy), so unlike the other five it
 runs offline only, not live in the browser.
 
 ## Running it

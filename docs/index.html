@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agora — Multi-Agent Systems Playground</title>
-<meta name="description" content="Automated negotiation, auctions, voting and distributed optimisation — interactive multi-agent demonstrations rebuilt from an AI MSc module, running in the browser.">
+<meta name="description" content="Automated negotiation, auctions, voting, distributed optimisation, supply allocation and matching markets — six interactive multi-agent demonstrations rebuilt from an AI MSc module, running in the browser.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://mikebertin.github.io/agora/">
 <meta property="og:title" content="Agora — Multi-Agent Systems in the Browser">
-<meta property="og:description" content="Automated negotiation, auctions, voting & distributed optimisation — interactive demos with a real Python engine running live via Pyodide.">
+<meta property="og:description" content="Six interactive multi-agent demos — negotiation, auctions, voting, distributed optimisation, supply allocation & matching markets — with a real Python engine running live via Pyodide.">
 <meta property="og:image" content="https://mikebertin.github.io/agora/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -32,7 +32,7 @@
   header{margin-bottom:44px}
   .badge{font-family:var(--mono);font-size:12px;letter-spacing:3px;color:var(--muted);text-transform:uppercase}
   h1{font-size:46px;margin:8px 0 10px;letter-spacing:-.5px;
-     background:linear-gradient(90deg,var(--neg),var(--auc) 45%,var(--vote) 75%,var(--dcop));
+     background:linear-gradient(90deg,var(--neg),var(--auc) 28%,var(--vote) 47%,var(--dcop) 65%,var(--supply) 82%,var(--match));
      -webkit-background-clip:text;background-clip:text;color:transparent}
   .lede{color:var(--muted);font-size:15.5px;line-height:1.65;max-width:680px;margin:0}
   .lede b{color:var(--ink);font-weight:600}
@@ -65,8 +65,8 @@
     <p class="lede">The Athenian <b>agora</b> was at once a marketplace, a bargaining floor and a
     voting assembly. This one revisits the core problems of my <b>Intelligent Agents</b> MSc module —
     automated <b>negotiation</b>, <b>auctions</b>, <b>voting</b> and distributed <b>optimisation</b> —
-    as interactive demonstrations. A real Python engine computes every result; the negotiation demo
-    even runs that engine <b>live in your browser</b> via Pyodide.</p>
+    as interactive demonstrations. A real Python engine computes every result, and five of the six
+    demos run that engine <b>live in your browser</b> via Pyodide.</p>
   </header>
 
   <div class="grid">
@@ -107,7 +107,7 @@
 
   <footer>
     Open the demos straight from <code>index.html</code> — no build, no server.
-    Negotiation logic lives in a small pure-Python engine (<code>core/</code>) reused verbatim by
+    The logic lives in a small pure-Python engine (<code>core/</code>) reused verbatim by
     the browser through Pyodide. Rebuilt from the COMP6203 GENIUS coursework.<br>
     <a href="https://github.com/mikebertin/agora">Source on GitHub</a>
   </footer>
