@@ -1,6 +1,6 @@
 """Frequency-based opponent model.
 
-Faithful port of the model in the COMP6203 coursework agent (group2.MyAgent):
+Faithful port of the model in the original coursework agent (group2.MyAgent):
 
   * Per issue, count how often the opponent offers each value.
   * Estimate each value's utility to the opponent by its frequency RANK:

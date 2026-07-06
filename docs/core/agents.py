@@ -6,7 +6,7 @@ Every agent exposes:
 
 Action is ("offer", bid) | ("accept", None) | ("end", None).
 
-Two flagship agents port the COMP6203 coursework agent:
+Two flagship agents port the original coursework agent:
   * FrequencyAgentV1 - faithful: fixed 0.8 target, accepts only at the buzzer.
   * FrequencyAgentV2 - improved: time-dependent concession + AC_next acceptance.
 Both share the frequency opponent model and the Pareto-seeking bid choice
