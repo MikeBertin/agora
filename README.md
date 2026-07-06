@@ -4,7 +4,7 @@
 
 The Athenian *agora* was at once a marketplace, a bargaining floor and a voting
 assembly. This project revisits the core problems of my **Intelligent Agents**
-MSc module (COMP6203) — automated **negotiation**, **auctions**, **voting** and
+MSc module — automated **negotiation**, **auctions**, **voting** and
 distributed **optimisation** — as interactive, self-contained web demos backed
 by a small, reusable Python engine.
 
@@ -34,7 +34,7 @@ Unlike a pure-JavaScript toy, the logic lives in a real Python package
 
 ## The negotiation agents
 
-The two flagship agents come straight from the GENIUS coursework:
+The two flagship agents come straight from the coursework:
 
 - **Frequency v1 (faithful)** — a direct port of the submitted `group2.MyAgent`:
   a fixed 0.8 utility target and acceptance only at the very deadline.
@@ -134,6 +134,6 @@ python3 tests/test_core.py
 
 ## Notes
 
-Rebuilt from the COMP6203 GENIUS coursework (Java). Named for the
+Rebuilt from my Intelligent Agents MSc coursework (Java). Named for the
 [agora](https://en.wikipedia.org/wiki/Agora) — market, assembly, and meeting
 place of the Greek city.
