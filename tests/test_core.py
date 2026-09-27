@@ -174,7 +174,7 @@ def test_matching():
           sorted(map(tuple, run["frames"][-1]["engaged"]))
           == sorted((p, r) for p, rs in run["matchA"].items() for r in rs))
 
-    # direction: proposer-optimal, receiver-pessimal — proved by enumeration
+    # direction: proposer-optimal, receiver-pessimal, proved by enumeration
     sc = MATCH_BY_ID["direction"]
     ev = match_eval(sc["a"], sc["b"])
     check("direction has three stable matchings", ev["stable"]["count"] == 3)

@@ -1,12 +1,12 @@
 """Central optimum: the transportation problem as a linear program.
 
-We choose how many units flow on each lane to **minimise total cost** — handling
+We choose how many units flow on each lane to **minimise total cost**: handling
 plus shipping on every served unit, plus the *lost value* of any demand left
 unserved. Pricing unserved elastic demand at its own value is the trick that
 folds two problems into one LP:
 
   * mandatory demand (``value is None``) has no unserved variable, so it must be
-    met in full — the pure min-cost transportation problem; and
+    met in full (the pure min-cost transportation problem); and
   * elastic demand can go unserved at the cost of its value, so minimising total
     cost is exactly **maximising welfare** (served value minus cost).
 
@@ -14,8 +14,8 @@ This is solved exactly by HiGHS via scipy's ``linprog``. The real prize is the
 **dual**:
 
   * the multiplier on each store's demand constraint is the market-clearing
-    **price** there — the marginal cost of serving one more unit; and
-  * the multiplier on each warehouse's capacity constraint is its **rent** — how
+    **price** there, the marginal cost of serving one more unit; and
+  * the multiplier on each warehouse's capacity constraint is its **rent**: how
     much total cost would fall given one more unit of that scarce capacity.
 
 By LP duality the optimum satisfies  cost = Σ price·demand − Σ rent·capacity.

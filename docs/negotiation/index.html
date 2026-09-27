@@ -3,15 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agora — Automated Negotiation</title>
+<link rel="icon" href="../badge.svg" type="image/svg+xml">
+<title>Agora · Automated Negotiation</title>
 <meta property="og:type" content="website">
-<meta property="og:title" content="Agora — Automated Negotiation">
+<meta property="og:title" content="Agora · Automated Negotiation">
 <meta property="og:image" content="https://mikebertin.github.io/agora/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://mikebertin.github.io/agora/og.png">
-<meta name="description" content="Two agents negotiate a job offer under a deadline: the bidding dance against the Pareto frontier, concession curves, and a frequency model learning the opponent's hidden preferences. Runs live in the browser via Pyodide.">
+<meta name="description" content="Two agents negotiate a job offer under a deadline: the bidding dance against the Pareto frontier, concession curves and a frequency model learning the opponent's hidden preferences. Runs live in the browser via Pyodide.">
 <style>
   :root{
     --bg:#0a0a0f; --panel:#13131c; --line:#23232f; --line2:#2c2c3a;
@@ -103,6 +104,7 @@
   #pop .eq{font-family:var(--mono);background:#0e0e16;border:1px solid var(--line);border-radius:7px;
     padding:8px 10px;margin:9px 0;font-size:12.5px;text-align:center;color:#e6ebff}
   #pop .fig{display:block;margin:9px auto 5px}
+  @media (prefers-reduced-motion: reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
@@ -136,7 +138,7 @@
       <div class="panel">
         <h3>The bidding dance</h3>
         <p class="psub">Every possible deal plotted by the two agents' utilities. Offers appear as
-        they are made; the aim is to reach the <span class="x" data-pop="pareto">Pareto frontier</span> —
+        they are made; the aim is to reach the <span class="x" data-pop="pareto">Pareto frontier</span>
         and ideally the <span class="x" data-pop="nash">Nash point</span> on it.</p>
         <canvas id="bidCanvas" height="430"></canvas>
         <div class="legend">
@@ -198,21 +200,21 @@
       </div>
       <div class="ncard">
         <h3>A learns B's priorities</h3>
-        <p>In the model panel, A's estimate of <b>Salary</b> and <b>Location</b> rises — B's two
-        top issues — inferred purely from which values B keeps repeating.</p>
+        <p>In the model panel, A's estimate of <b>Salary</b> and <b>Location</b> rises (B's two
+        top issues), inferred purely from which values B keeps repeating.</p>
         <span class="x why" data-pop="learning">How frequency reveals weight</span>
       </div>
       <div class="ncard">
         <h3>Money left on the table</h3>
         <p>Deals often land just <i>inside</i> the frontier. <b>Distance to Nash</b> measures the
-        joint value lost — surplus neither side managed to capture.</p>
+        joint value lost: surplus neither side managed to capture.</p>
         <span class="x why" data-pop="efficiency">Efficiency vs fairness</span>
       </div>
     </div>
   </section>
 
   <p class="sub" style="margin-top:26px;border-top:1px solid var(--line);padding-top:16px">
-    <b>v1 (faithful)</b> is a direct port of my MSc coursework agent — fixed 0.8 target,
+    <b>v1 (faithful)</b> is a direct port of my MSc coursework agent: fixed 0.8 target,
     <span class="x" data-pop="acnext">acceptance</span> only at the deadline. <b>v2 (improved)</b>
     adds time-dependent concession and AC-next acceptance. Both share the same frequency opponent
     model and Pareto-seeking bid choice.</p>
@@ -434,7 +436,7 @@ const POP = {
     t=1, both fall back to their walk-away value.</p>`},
   pareto:{title:'The Pareto frontier',html:`
     <p>The set of deals where you <b>cannot help one side without hurting the other</b>. Any deal
-    below it is wasteful — a different deal exists that's better for someone and worse for no one.</p>
+    below it is wasteful: a different deal exists that's better for someone and worse for no one.</p>
     <svg class="fig" width="210" height="92" viewBox="0 0 210 92" xmlns="http://www.w3.org/2000/svg">
       <line x1="26" y1="8" x2="26" y2="74" stroke="#2a2a38"/><line x1="26" y1="74" x2="198" y2="74" stroke="#2a2a38"/>
       <text x="4" y="16" fill="#6b6b80" font-size="9" font-family="monospace">uB</text>
@@ -460,38 +462,38 @@ const POP = {
   freqmodel:{title:'The frequency opponent model',html:`
     <p>Neither side reveals its preferences, so A <b>infers them from behaviour</b>. Two heuristics,
     both from the coursework agent:</p>
-    <p><b>Issue weights</b> — issues where B keeps repeating the <i>same</i> value clearly matter to
+    <p><b>Issue weights</b>: issues where B keeps repeating the <i>same</i> value clearly matter to
     B, so concentration of offers ⇒ higher estimated weight.</p>
-    <p><b>Value utilities</b> — within an issue, the more often B offers a value, the higher A scores
+    <p><b>Value utilities</b>: within an issue, the more often B offers a value, the higher A scores
     it for B (by frequency rank).</p>
     <p class="muted">A then offers, among deals good enough for itself, the one this model rates best
-    for B — chasing the frontier.</p>`},
+    for B, chasing the frontier.</p>`},
   acnext:{title:'When to accept (AC-next)',html:`
-    <p>The faithful <b>v1</b> accepts only at the very deadline — risking a last-second scramble or
+    <p>The faithful <b>v1</b> accepts only at the very deadline, risking a last-second scramble or
     no deal at all. The improved <b>v2</b> uses <b>AC-next</b>: accept the offer on the table if it's
     <b>at least as good as the counter you were about to send</b>.</p>
-    <p class="muted">A small change with a big effect — it stops you haggling past a deal that already
+    <p class="muted">A small change with a big effect: it stops you haggling past a deal that already
     beats your own next move.</p>`},
   stonewall:{title:'Why stonewalling isn’t simply wrong',html:`
     <p>v1's fixed 0.8 demand looks naive, but against an opponent that <b>concedes monotonically</b>,
     standing firm is close to optimal: you give up nothing and let them come to you.</p>
-    <p class="muted">v1's real failures are elsewhere — it reaches <b>no deal</b> against a hardliner,
+    <p class="muted">v1's real failures are elsewhere: it reaches <b>no deal</b> against a hardliner,
     and loses the <b>head-to-head against v2</b>, which concedes gracefully and still ends ahead.
     There's no single best strategy; it depends who you're facing.</p>`},
   hardliner:{title:'No deal is sometimes rational',html:`
-    <p>Each agent has a <b>reservation value</b> — the utility of walking away (0.3 here). A deal only
+    <p>Each agent has a <b>reservation value</b>: the utility of walking away (0.3 here). A deal only
     happens if <i>both</i> sides prefer it to walking.</p>
     <p class="muted">A hardliner only ever offers its own best bid, which is near-worthless to the
-    opponent. No bid beats walking away for both at once, so the protocol ends with no agreement —
-    the correct outcome, not a bug.</p>`},
+    opponent. No bid beats walking away for both at once, so the protocol ends with no agreement.
+    That is the correct outcome, not a bug.</p>`},
   learning:{title:'How frequency reveals weight',html:`
     <p>B can't say "Salary matters most to me", but its <b>offers betray it</b>. On issues B cares
     about, it clings to its preferred value; on issues it doesn't, its offers wander.</p>
     <div class="eq">ŵ<sub>i</sub> ∝ Σ<sub>v</sub> freq(v)<sup>2</sup></div>
     <p class="muted">That concentration measure (a sum of squared frequencies) rises for issues B is
-    rigid on — which is exactly the issues that weigh heavily in B's utility.</p>`},
+    rigid on, which are exactly the issues that weigh heavily in B's utility.</p>`},
   efficiency:{title:'Efficiency vs fairness',html:`
-    <p><b>Pareto-optimal</b> means no joint value was wasted — you reached the frontier. <b>Nash</b>
+    <p><b>Pareto-optimal</b> means no joint value was wasted: you reached the frontier. <b>Nash</b>
     additionally picks a balanced point on it. A deal can be one without the other.</p>
     <p class="muted">"Distance to Nash" captures both: a far-off deal either left surplus uncaptured
     (inside the frontier) or split it lopsidedly (along the frontier, far from the balanced point).</p>`},

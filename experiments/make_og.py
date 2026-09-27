@@ -1,6 +1,6 @@
 """Render the 1200x630 Open Graph / social card to docs/og.png.
 
-Needs Pillow (not in requirements.txt — it's a build tool, not an engine dep):
+Needs Pillow (not in requirements.txt because it's a build tool, not an engine dep):
 
     .venv/bin/pip install pillow
     .venv/bin/python experiments/make_og.py
@@ -87,7 +87,7 @@ def main():
 
     # footer
     d.text((PAD + 4, 556),
-           "negotiation · auctions · voting · DCOP · supply · matching — one real Python engine",
+           "negotiation · auctions · voting · DCOP · supply · matching · one real Python engine",
            font=foot, fill=MUTED)
 
     out = os.path.join(root, "docs", "og.png")

@@ -29,7 +29,7 @@ def main() -> None:
         print(f"{s['label']:22s} stable={ev['stable']['count']}  "
               f"a-proposes avg rank {ra['avgRankA']}/{ra['avgRankB']}  "
               f"b-proposes {rb['avgRankA']}/{rb['avgRankB']}  "
-              f"unmatched={ra['unmatchedA'] or '—'}")
+              f"unmatched={ra['unmatchedA'] or '–'}")
 
     with open(os.path.join(out_dir, "matching.json"), "w") as f:
         json.dump({"scenarios": scenarios}, f, separators=(",", ":"))

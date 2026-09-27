@@ -1,4 +1,4 @@
-"""Agora supply engine — logistics allocation as a transportation problem.
+"""Agora supply engine: logistics allocation as a transportation problem.
 
 The same scarce supply, allocated three ways and compared on cost and welfare:
 a central LP optimum, an auction-algorithm market, and a greedy baseline.

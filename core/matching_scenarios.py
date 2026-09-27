@@ -1,6 +1,6 @@
 """Curated matching markets, each illustrating one lesson in two-sided matching.
 
-Every market is small enough to check by hand — and small enough that the
+Every market is small enough to check by hand, and small enough that the
 tests *enumerate* all stable matchings and *brute-force* all misreports, so
 the lessons (proposer-optimality, one-sided strategy-proofness, the rural
 hospital theorem) are proved on the instance, not just quoted.
@@ -11,7 +11,7 @@ SCENARIOS = [
     {
         "id": "clear",
         "label": "A clear match",
-        "blurb": "Everyone agrees on how the other side ranks — the market is "
+        "blurb": "Everyone agrees on how the other side ranks, so the market is "
                  "assortative. There is exactly one stable matching, so it "
                  "makes no difference who proposes: watch the same rejection "
                  "cascade sort everyone into place from either side. The "
@@ -32,7 +32,7 @@ SCENARIOS = [
         "label": "The domino effect",
         "blurb": "Five candidates, four jobs. Ana loses Koru to Eve, so she "
                  "takes Lumen from Ben; Ben takes Onyx from Cleo; Cleo takes "
-                 "Pico from Dex — and Dex, bumped last, ends with nothing. "
+                 "Pico from Dex, and Dex, bumped last, ends with nothing. "
                  "Engagements are only ever tentative: one rejection can "
                  "reshuffle everyone downstream, which is exactly why the "
                  "algorithm defers acceptance until the market goes quiet.",
@@ -58,7 +58,7 @@ SCENARIOS = [
                  "their first choice and every company its last; flip the "
                  "direction and it inverts exactly. Deferred acceptance "
                  "always delivers the best stable outcome for the proposing "
-                 "side — the algorithm's one big thumb on the scale.",
+                 "side: the algorithm's one big thumb on the scale.",
         "a": {"label": "Candidates", "prefs": {
             "Ana":  ["Koru", "Lumen", "Onyx"],
             "Ben":  ["Lumen", "Onyx", "Koru"],
@@ -74,7 +74,7 @@ SCENARIOS = [
         "id": "strategy",
         "label": "The profitable lie",
         "blurb": "With candidates proposing, no candidate can ever gain by "
-                 "misreporting — we brute-force every list they could submit. "
+                 "misreporting; we brute-force every list they could submit. "
                  "But Koru can: by striking Ana off its list entirely, the "
                  "rejection ricochets around the market and delivers Koru its "
                  "first choice, Ben. Strategy-proofness only ever holds for "
@@ -94,7 +94,7 @@ SCENARIOS = [
         "label": "Hospitals & residents",
         "blurb": "Many-to-one: hospitals take several residents (City and "
                  "Rural have two posts each). Rhea and Sam trade Metro and "
-                 "Bay depending on who proposes — but in every stable "
+                 "Bay depending on who proposes, but in every stable "
                  "matching Rural fills only one of its two posts, with Wren, "
                  "and Vik is left unmatched. Which posts stay vacant and who "
                  "goes unplaced are facts of the market, not of the "

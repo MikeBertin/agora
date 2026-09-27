@@ -4,11 +4,11 @@
 
 The Athenian *agora* was at once a marketplace, a bargaining floor and a voting
 assembly. This project revisits the core problems of my **Intelligent Agents**
-MSc module — automated **negotiation**, **auctions**, **voting** and
-distributed **optimisation** — as interactive, self-contained web demos backed
+MSc module (automated **negotiation**, **auctions**, **voting** and
+distributed **optimisation**) as interactive, self-contained web demos backed
 by a small, reusable Python engine.
 
-[![Six interactive multi-agent demos — negotiation, auctions, voting, distributed optimisation, supply allocation and matching markets](docs/demo.gif)](https://mikebertin.github.io/agora/)
+[![Six interactive multi-agent demos: negotiation, auctions, voting, distributed optimisation, supply allocation and matching markets](docs/demo.gif)](https://mikebertin.github.io/agora/)
 
 🔗 **[Live site](https://mikebertin.github.io/agora/)**
 
@@ -16,7 +16,7 @@ Unlike a pure-JavaScript toy, the logic lives in a real Python package
 (`core/`). The same code runs two ways:
 
 - **offline**, to precompute the traces the site plays back instantly, and
-- **live in your browser**, via [Pyodide](https://pyodide.org) — five of the
+- **live in your browser**, via [Pyodide](https://pyodide.org): five of the
   six demos run the actual Python engine in WebAssembly so you can change
   parameters and re-run with no server (supply is the exception: its LP
   solver can't run in the browser).
@@ -25,30 +25,37 @@ Unlike a pure-JavaScript toy, the logic lives in a real Python package
 
 | | | |
 |---|---|---|
-| **[Negotiation](docs/negotiation/)** | Bilateral bargaining | A candidate and an employer haggle over a five-issue job offer under a deadline. Watch the bidding dance against the exact Pareto frontier, the concession curves, and a frequency model learning the opponent's hidden priorities. |
-| **[Auctions](docs/auctions/)** | Mechanism design | English / Vickrey / first-price / Dutch auctions under independent private values; bid shading, the revenue-equivalence theorem converging live, and the same-mean/different-variance revenue distribution. |
-| **[Voting](docs/voting/)** | Social choice | Plurality, Borda, instant-runoff and Condorcet over curated profiles (spoiler, the Condorcet paradox, and a profile where all four rules disagree), with a live majority graph. |
+| **[Negotiation](docs/negotiation/)** | Bilateral bargaining | A candidate and an employer haggle over a five-issue job offer under a deadline. Watch the bidding dance against the exact Pareto frontier, the concession curves and a frequency model learning the opponent's hidden priorities. |
+| **[Auctions](docs/auctions/)** | Mechanism design | English / Vickrey / first-price / Dutch auctions under independent private values; bid shading, the revenue-equivalence theorem converging live and the same-mean/different-variance revenue distribution. |
+| **[Voting](docs/voting/)** | Social choice | Plurality, Borda, instant-runoff and Condorcet over curated profiles (spoiler, the Condorcet paradox and a profile where all four rules disagree), with a live majority graph. |
 | **[Distributed optimisation](docs/dcop/)** | DCOP | Graph colouring as decentralised resource allocation: autonomous agents resolve conflicts with only local information via DSA and MGM. |
-| **[Supply allocation](docs/supply/)** | Logistics / network flow | The transportation problem solved three ways — a central LP optimum, an auction-algorithm market where demand bids for capacity, and a greedy baseline — compared on cost, welfare and the efficiency gap. The market reaches the optimum *and* rediscovers its dual prices by bidding. |
-| **[Matching markets](docs/matching/)** | Market design | Gale–Shapley deferred acceptance, animated: proposals, tentative engagements and rejection cascades, one-to-one and hospitals/residents with quotas. Proposer-optimality, one-sided strategy-proofness and the rural hospital theorem are *proved on each instance* — by enumerating every stable matching and brute-forcing every possible misreport. |
+| **[Supply allocation](docs/supply/)** | Logistics / network flow | The transportation problem solved three ways (a central LP optimum, an auction-algorithm market where demand bids for capacity and a greedy baseline) and compared on cost, welfare and the efficiency gap. The market reaches the optimum *and* rediscovers its dual prices by bidding. |
+| **[Matching markets](docs/matching/)** | Market design | Gale–Shapley deferred acceptance, animated: proposals, tentative engagements and rejection cascades, one-to-one and hospitals/residents with quotas. Proposer-optimality, one-sided strategy-proofness and the rural hospital theorem are *proved on each instance* by enumerating every stable matching and brute-forcing every possible misreport. |
+
+## Why Agora
+
+The [agora](https://en.wikipedia.org/wiki/Agora) was the open square at the heart of an ancient
+Greek city: marketplace, meeting ground and civic centre in one. People bargained there, traded
+there and settled public questions there. That is the same mix of negotiation, markets and
+collective choice these demos explore, so the square lends the project its name.
 
 ## The negotiation agents
 
 The two flagship agents come straight from the coursework:
 
-- **Frequency v1 (faithful)** — a direct port of the submitted `group2.MyAgent`:
+- **Frequency v1 (faithful)**: a direct port of the submitted `group2.MyAgent`:
   a fixed 0.8 utility target and acceptance only at the very deadline.
-- **Frequency v2 (improved)** — adds time-dependent (Boulware) concession and
+- **Frequency v2 (improved)**: adds time-dependent (Boulware) concession and
   AC-next acceptance.
 
-Both share the same **frequency opponent model** — estimating the opponent's
+Both share the same **frequency opponent model** (estimating the opponent's
 issue weights from how concentrated their offers are, and value utilities from
-offer frequency rank — and the same **Pareto-seeking bid choice**: among bids
+offer frequency rank) and the same **Pareto-seeking bid choice**: among bids
 good enough for us, offer the one the model thinks is best for the opponent.
 
 Pitting them against four opponents (Boulware, Conceder, Hardliner, Random)
 tells an honest story rather than a tidy one: v1 can *stonewall a pure
-conceder* for a high payoff, but is brittle — it reaches **no deal** against a
+conceder* for a high payoff, but is brittle: it reaches **no deal** against a
 hardliner and **loses the head-to-head to v2**, which concedes gracefully and
 agrees faster.
 
@@ -96,7 +103,7 @@ auction equilibria are enumerated/closed-form). The `supply/` package is where
 the `auctions` (mechanism design) and `dcop` (decentralised allocation) threads
 are carried forward into a real resource-allocation engine: it solves the
 logistics transportation problem as a central LP, as a decentralised auction
-market, and greedily — then measures the efficiency gap between them. The
+market and greedily, then measures the efficiency gap between them. The
 market handles lane capacities (per-lane slot pools with phantom buyers), and
 an ε-scaled sequential variant (`supply/scale.py`) reaches the same optimum on
 thousand-unit instances in milliseconds where the synchronous auction would
@@ -106,7 +113,7 @@ runs offline only, not live in the browser.
 
 ## Running it
 
-The site is static — open `docs/index.html`, or serve the folder:
+The site is static: open `docs/index.html`, or serve the folder:
 
 ```sh
 cd docs && python3 -m http.server 8761
@@ -118,7 +125,7 @@ Regenerate the precomputed traces (and refresh the in-browser engine copy in `do
 for r in run run_auctions run_voting run_dcop run_matching; do python3 experiments/$r.py; done
 ```
 
-The supply engine is the exception — it needs scipy, so set up a venv first:
+The supply engine is the exception: it needs scipy, so set up a venv first:
 
 ```sh
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
@@ -134,6 +141,8 @@ python3 tests/test_core.py
 
 ## Notes
 
-Rebuilt from my Intelligent Agents MSc coursework (Java). Named for the
-[agora](https://en.wikipedia.org/wiki/Agora) — market, assembly, and meeting
-place of the Greek city.
+Rebuilt from my Intelligent Agents MSc coursework (Java).
+
+---
+
+<sub>Part of a collection of interactive builds · [mikebertin.github.io](https://mikebertin.github.io/)</sub>

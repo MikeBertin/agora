@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agora — Distributed Optimisation</title>
+<link rel="icon" href="../badge.svg" type="image/svg+xml">
+<title>Agora · Distributed Optimisation</title>
 <meta property="og:type" content="website">
-<meta property="og:title" content="Agora — Distributed Optimisation">
+<meta property="og:title" content="Agora · Distributed Optimisation">
 <meta property="og:image" content="https://mikebertin.github.io/agora/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -89,6 +90,7 @@
   #pop .muted{color:var(--muted);font-size:12px}
   #pop .eq{font-family:var(--mono);background:#0e0e16;border:1px solid var(--line);border-radius:7px;
     padding:8px 10px;margin:9px 0;font-size:12.5px;text-align:center;color:#e6ebff}
+  @media (prefers-reduced-motion: reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
@@ -96,10 +98,10 @@
   <a class="back" href="../">&larr; Agora</a>
   <header class="hero">
     <h1>Distributed Optimisation</h1>
-    <p class="sub">Each node is an autonomous agent picking one of <i>k</i> colours — read: a time slot,
-    frequency or channel. Neighbours sharing a colour <b>clash</b> over the resource. No agent sees the
+    <p class="sub">Each node is an autonomous agent picking one of <i>k</i> colours (read: a time slot,
+    frequency or channel). Neighbours sharing a colour <b>clash</b> over the resource. No agent sees the
     whole network; each knows only its own choice and its neighbours'. Yet through purely
-    <span class="x" data-pop="local">local moves</span> they drive the global conflict count down — the
+    <span class="x" data-pop="local">local moves</span> they drive the global conflict count down: the
     backbone of decentralised <span class="x" data-pop="allocation">scheduling and allocation</span>.
     This is a <span class="x" data-pop="dcop">DCOP</span>. <b>Live</b> runs the real Python engine via
     Pyodide.</p>
@@ -140,7 +142,7 @@
       <div class="panel">
         <h3>Convergence</h3>
         <p class="psub">Total conflicts per round. <span class="x" data-pop="dsa">DSA</span> drops fast
-        but can wobble; <span class="x" data-pop="mgm">MGM</span> only ever improves — but may
+        but can wobble; <span class="x" data-pop="mgm">MGM</span> only ever improves but may
         <span class="x" data-pop="localopt">stall</span> above zero.</p>
         <canvas id="convCanvas" height="220"></canvas>
         <div class="legend">
@@ -166,26 +168,26 @@
     <div class="notice-grid">
       <div class="ncard">
         <h3>Local moves, global goal</h3>
-        <p>No agent ever sees the whole network or counts the global conflicts — each just reacts to its
+        <p>No agent ever sees the whole network or counts the global conflicts; each just reacts to its
         neighbours. The global objective falls anyway, purely from local self-interest.</p>
         <span class="x why" data-pop="local">How that works</span>
       </div>
       <div class="ncard">
         <h3>Randomness as a tool</h3>
         <p>In DSA, if every conflicting agent moved at once they'd chase each other forever. The move
-        probability p breaks that symmetry — turn it up in Live and watch it thrash.</p>
+        probability p breaks that symmetry. Turn it up in Live and watch it thrash.</p>
         <span class="x why" data-pop="dsa">DSA's coin flip</span>
       </div>
       <div class="ncard">
         <h3>MGM never backslides</h3>
         <p>Letting only the biggest-gain agent in each neighbourhood move guarantees conflicts never
-        rise — but the dense network shows it can get stuck a notch above zero.</p>
+        rise, but the dense network shows it can get stuck a notch above zero.</p>
         <span class="x why" data-pop="localopt">Local optima</span>
       </div>
       <div class="ncard">
         <h3>Too few resources</h3>
         <p>Drop the colour count below what the network needs (Live) and no assignment can satisfy
-        everyone — the agents fight forever over a genuinely scarce resource.</p>
+        everyone, and the agents fight forever over a genuinely scarce resource.</p>
         <span class="x why" data-pop="allocation">Scarcity &amp; allocation</span>
       </div>
     </div>
@@ -195,6 +197,8 @@
 <div id="pop" role="tooltip"></div>
 
 <script>
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches; // reduced motion: show the end state, wait for Play
+
 const C=k=>getComputedStyle(document.documentElement).getPropertyValue(k).trim();
 const CCOLORS=['#7cc4ff','#ff8f6b','#5fd0c5','#ffc266','#b9a3ff','#ff7eb6'];
 let dataset=null, inst=null, algo='dsa', frames=[], idx=0, playing=false, mode='play';
@@ -213,7 +217,7 @@ function selectInstance(i){
   $('pSlider').value=inst.params.p; $('pVal').textContent=inst.params.p.toFixed(2);
   useRuns();
 }
-function useRuns(){ frames=inst.runs[algo]; idx=0; $('scrub').max=frames.length-1; $('scrub').value=0; seek(0); drawConv(); startPlay(); }
+function useRuns(){ frames=inst.runs[algo]; idx=0; $('scrub').max=frames.length-1; $('scrub').value=0; seek(RM?frames.length-1:0); drawConv(); if(!RM) startPlay(); }
 
 function seek(i){
   idx=Math.max(0,Math.min(i,frames.length-1));
@@ -323,6 +327,8 @@ json.dumps({"id":"live","label":"Live","params":{"n":${pr.n},"radius":${pr.radiu
 $('instance').onchange=e=>{ if(mode!=='play') setMode('play'); selectInstance(+e.target.value); };
 $('algoDsa').onclick=()=>setAlgo('dsa'); $('algoMgm').onclick=()=>setAlgo('mgm');
 $('playBtn').onclick=togglePlay;
+document.addEventListener('visibilitychange',()=>{ if(document.hidden&&playing) stopPlay(); });
+
 $('scrub').oninput=e=>{ stopPlay(); seek(+e.target.value); };
 $('kSlider').oninput=e=>$('kVal').textContent=e.target.value;
 $('pSlider').oninput=e=>$('pVal').textContent=(+e.target.value).toFixed(2);
@@ -351,29 +357,29 @@ const POP={
     <p>Colouring <i>is</i> resource allocation in disguise. Map colours to <b>time slots</b> and you
     have meeting scheduling; to <b>frequencies</b>, channel assignment; to <b>machines</b>, job
     scheduling. An edge means "these two can't share".</p>
-    <p class="muted">Doing it with local agents — rather than one central optimiser — is what makes it
+    <p class="muted">Doing it with local agents (rather than one central optimiser) is what makes it
     robust and scalable, the foundation a distributed supply/resource engine builds on.</p>`},
   local:{title:'Local moves, global goal',html:`
     <p>Each agent only ever counts conflicts with its <b>immediate neighbours</b> and picks the colour
     that minimises them. Summed across the network, those selfish local improvements pull the
     <b>global</b> conflict total down.</p>
-    <p class="muted">It isn't guaranteed to reach zero — local search can get stuck — but it needs no
-    global view, no coordinator, and scales to huge networks.</p>`},
-  dsa:{title:'DSA — distributed stochastic algorithm',html:`
+    <p class="muted">It isn't guaranteed to reach zero (local search can get stuck), but it needs no
+    global view or coordinator and scales to huge networks.</p>`},
+  dsa:{title:'DSA: distributed stochastic algorithm',html:`
     <p>Every round, each agent finds the colour that cuts its conflicts most and, if that's an
     improvement, switches to it <b>with probability p</b>.</p>
     <div class="eq">move if gain &gt; 0 and rand() &lt; p</div>
     <p class="muted">The coin flip matters: if two clashing neighbours both moved every time, they'd
     swap colours forever. p&nbsp;≈&nbsp;0.7 works well; p&nbsp;=&nbsp;1 thrashes.</p>`},
-  mgm:{title:'MGM — maximum gain messaging',html:`
+  mgm:{title:'MGM: maximum gain messaging',html:`
     <p>Each agent computes its best possible improvement (its <b>gain</b>) and shares it. An agent only
     moves if its gain is the <b>largest among its neighbours</b>.</p>
-    <p class="muted">Because no two neighbours move at once, the global cost can never rise — MGM is
+    <p class="muted">Because no two neighbours move at once, the global cost can never rise, so MGM is
     <b>monotonic</b>. The price is that it can freeze in a local optimum that DSA's randomness would
     have escaped.</p>`},
   localopt:{title:'Local optima',html:`
     <p>A state where <b>no single agent</b> can improve by moving alone, yet conflicts remain. Escaping
-    needs two agents to move together — which MGM forbids and DSA only manages by luck.</p>
+    needs two agents to move together, which MGM forbids and DSA only manages by luck.</p>
     <p class="muted">The dense network settles here a notch above zero. More colours, or a dash of
     randomness, is what breaks out.</p>`},
 };

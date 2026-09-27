@@ -4,10 +4,10 @@ A Network is a bipartite shipping problem: warehouses hold a limited supply of
 a single homogeneous good and ship it down lanes to stores that demand it.
 Every lane has a per-unit shipping cost; serving a unit of a store's demand is
 worth its per-unit value. A solver's job is to choose how many units flow on
-each lane — a Flow.
+each lane: a Flow.
 
-The model is deliberately plain data. Every solver — the central LP optimum,
-the auction-algorithm market, and the greedy baseline — reads the same Network
+The model is deliberately plain data. Every solver (the central LP optimum,
+the auction-algorithm market and the greedy baseline) reads the same Network
 and returns a Flow, so they can be compared on equal footing.
 """
 from __future__ import annotations
@@ -36,7 +36,7 @@ class Store:
 
     ``value=None`` marks the demand as *mandatory*: it must be served in full
     (the pure min-cost transportation problem). A finite value makes demand
-    *elastic* — a unit is only worth serving when its value exceeds the
+    *elastic*: a unit is only worth serving when its value exceeds the
     delivered cost, so the welfare-maximising solution may leave low-value
     demand unmet.
     """

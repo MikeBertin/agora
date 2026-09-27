@@ -1,4 +1,4 @@
-"""Social choice: turning ranked ballots into a winner — four ways.
+"""Social choice: turning ranked ballots into a winner, four ways.
 
 A *profile* is a list of (count, ranking) blocs, where ranking is a tuple of
 candidate labels best-to-worst and every ranking lists every candidate. The

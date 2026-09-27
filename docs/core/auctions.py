@@ -13,7 +13,7 @@ Four classic mechanisms, each with its game-theoretic equilibrium strategy:
                                   bidder plans to accept at b(v) = v·(n-1)/n.
 
 For values drawn uniformly on [0,1] all four have the same expected revenue,
-(n-1)/(n+1) — the revenue-equivalence theorem — and all four are efficient
+(n-1)/(n+1), which is the revenue-equivalence theorem, and all four are efficient
 (the highest-value bidder always wins).
 """
 from __future__ import annotations

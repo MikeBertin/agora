@@ -1,7 +1,7 @@
 """The market: Bertsekas' auction algorithm as a decentralised mechanism.
 
 Where ``solve.py`` hands the whole instance to a central LP, here the allocation
-*emerges* from self-interested bidding — the same idea as the single-item
+*emerges* from self-interested bidding: the same idea as the single-item
 auctions demo, scaled up to many units of supply and demand.
 
 We disaggregate the transportation problem into an **assignment** problem: each
@@ -19,7 +19,7 @@ Lane capacities need one more idea. A capped lane (w, s) limits how many of w's
 units may travel to s specifically, so when any lane is capped the objects
 become **lane slots**: lane (w, s) offers min(lane cap, capacity, demand) slots
 that only s's buyers may bid on. A warehouse's slots can then add up to more
-than its capacity, so the excess is retired by **phantom buyers** — one per
+than its capacity, so the excess is retired by **phantom buyers**, one per
 surplus slot, mandatory, indifferent between the warehouse's slots (benefit 0).
 Every phantom must end up holding a slot, which is exactly the capacity
 constraint; being indifferent, they settle on the slots real demand values
@@ -31,7 +31,7 @@ The auction itself: every unassigned buyer simultaneously bids for the object
 giving it the most surplus net of price, raising that object's price by its
 advantage over its second-best plus a small ``eps``. Objects go to their highest
 bidder; the dispossessed rebid next round. Prices only ever rise, so it
-terminates, and for ``eps < 1/n`` (integer benefits) the assignment is optimal —
+terminates, and for ``eps < 1/n`` (integer benefits) the assignment is optimal,
 and the converged object prices are exactly the warehouses' capacity rents
 (plus the lane's own rent, on a binding capped lane).
 
@@ -177,7 +177,7 @@ def solve_market(net: Network, eps: Optional[float] = None,
                 elif net_v > second_v:
                     second_v = net_v
             if best_k == _DUMMY:
-                held[b] = _DUMMY  # not worth serving — leaves the market
+                held[b] = _DUMMY  # not worth serving, so it leaves the market
                 continue
             if second_v == _NEG:
                 second_v = best_v  # sole option: minimal raise

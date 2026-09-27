@@ -1,6 +1,6 @@
 """Discrete multi-issue domains and additive utility spaces.
 
-A Bid is a plain dict mapping issue name -> chosen value (both strings) — the
+A Bid is a plain dict mapping issue name -> chosen value (both strings): the
 natural shape for a discrete additive utility space.
 """
 from __future__ import annotations

@@ -3,15 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agora — Voting</title>
+<link rel="icon" href="../badge.svg" type="image/svg+xml">
+<title>Agora · Voting</title>
 <meta property="og:type" content="website">
-<meta property="og:title" content="Agora — Voting">
+<meta property="og:title" content="Agora · Voting">
 <meta property="og:image" content="https://mikebertin.github.io/agora/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://mikebertin.github.io/agora/og.png">
-<meta name="description" content="The same ranked ballots, four voting rules, four different winners — plurality, Borda, instant-runoff and the Condorcet paradox, with a live pairwise graph. Runs the real Python engine via Pyodide.">
+<meta name="description" content="The same ranked ballots, four voting rules, four different winners: plurality, Borda, instant-runoff and the Condorcet paradox, with a live pairwise graph. Runs the real Python engine via Pyodide.">
 <style>
   :root{
     --bg:#0a0a0f; --panel:#13131c; --line:#23232f; --line2:#2c2c3a;
@@ -113,6 +114,7 @@
   #pop .muted{color:var(--muted);font-size:12px}
   #pop .eq{font-family:var(--mono);background:#0e0e16;border:1px solid var(--line);border-radius:7px;
     padding:8px 10px;margin:9px 0;font-size:12.5px;text-align:center;color:#e6ebff}
+  @media (prefers-reduced-motion: reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
@@ -124,7 +126,7 @@
     <b>which</b> rule? Plurality, <span class="x" data-pop="borda">Borda</span>,
     <span class="x" data-pop="irv">instant-runoff</span> and the
     <span class="x" data-pop="condorcet">Condorcet</span> method can each crown a <b>different</b>
-    winner from the very same votes — and sometimes the majority's will
+    winner from the very same votes, and sometimes the majority's will
     <span class="x" data-pop="paradox">cycles</span> with no winner at all.
     <b>Live</b> runs the real Python engine in your browser via Pyodide.</p>
   </header>
@@ -132,7 +134,7 @@
   <div class="controls">
     <div class="ctl" id="scenCtl"><label for="scenario">Scenario</label><select id="scenario"></select></div>
     <div class="ctl" style="flex:1;min-width:220px"><label>&nbsp;</label>
-      <span style="color:var(--muted);font-size:12.5px;line-height:1.4">Pick a scenario — or switch to
+      <span style="color:var(--muted);font-size:12.5px;line-height:1.4">Pick a scenario, or switch to
       <b style="color:var(--ink)">Live · Python</b> (lower left) to rebalance the electorate and watch the cycle appear.</span></div>
   </div>
 
@@ -142,14 +144,14 @@
     <div class="col-left">
       <div class="panel">
         <h3>Winner under each rule</h3>
-        <p class="psub">The same ballots, four rules. Watch where they agree — and where they don't.</p>
+        <p class="psub">The same ballots, four rules. Watch where they agree and where they don't.</p>
         <div id="results"></div>
         <div id="banner"></div>
       </div>
       <div class="panel">
         <h3>Head-to-head <span class="x" data-pop="pairwise" style="font-size:12px">(majority graph)</span></h3>
         <p class="psub">An arrow A → B means a majority prefers A to B (the number is the margin). One
-        candidate beating everyone is the Condorcet winner; a loop is the paradox — no winner.</p>
+        candidate beating everyone is the Condorcet winner; a loop is the paradox: no winner.</p>
         <canvas id="graphCanvas" height="300"></canvas>
       </div>
       <div class="panel" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
@@ -167,7 +169,7 @@
       </div>
       <div class="panel">
         <h3>Tallies</h3>
-        <p class="psub">First-place votes (what plurality counts) vs Borda points — normalised. Different
+        <p class="psub">First-place votes (what plurality counts) vs Borda points, normalised. Different
         rules reward different things.</p>
         <canvas id="tallyCanvas" height="190"></canvas>
         <div style="display:flex;gap:14px;margin-top:8px;font-size:11.5px;color:var(--muted);font-family:var(--mono)">
@@ -177,7 +179,7 @@
       <div class="panel">
         <h3>Live exploration</h3>
         <p class="psub">Switch Mode (lower left) to <b>Live · Python</b> for a three-candidate (A, B, C)
-        sandbox, then rebalance the three cyclic blocs — the winners, and the cycle, shift live.</p>
+        sandbox, then rebalance the three cyclic blocs; the winners and the cycle shift live.</p>
         <div id="liveCtls" style="opacity:.5">
           <div class="ctl" style="margin-bottom:10px"><label>A&gt;B&gt;C · <span id="v0v">35</span></label><input id="b0" type="range" min="0" max="60" value="35" disabled style="width:100%;accent-color:var(--accent)"></div>
           <div class="ctl" style="margin-bottom:10px"><label>B&gt;C&gt;A · <span id="v1v">33</span></label><input id="b1" type="range" min="0" max="60" value="33" disabled style="width:100%;accent-color:var(--accent)"></div>
@@ -198,14 +200,14 @@
       </div>
       <div class="ncard">
         <h3>Majorities can cycle</h3>
-        <p>A beats B, B beats C, and C beats A — all by majority. Collective preference need not be
+        <p>A beats B, B beats C and C beats A, all by majority. Collective preference need not be
         consistent, even when every voter is. There may be no Condorcet winner.</p>
         <span class="x why" data-pop="paradox">The Condorcet paradox</span>
       </div>
       <div class="ncard">
         <h3>No perfect rule</h3>
         <p>It isn't that one method is simply right. Arrow's theorem proves no ranked rule can satisfy a
-        few basic fairness axioms at once — trade-offs are unavoidable.</p>
+        few basic fairness axioms at once, so trade-offs are unavoidable.</p>
         <span class="x why" data-pop="arrow">Arrow's theorem</span>
       </div>
       <div class="ncard">
@@ -253,7 +255,7 @@ function renderResults(){
   for(const [key,name,sub] of RULES){
     const res=r[key]; let winHTML, detail='';
     if(key==='condorcet'){
-      winHTML = res.winner ? chip(res.winner,true) : `<span class="nochip">none — cycle</span>`;
+      winHTML = res.winner ? chip(res.winner,true) : `<span class="nochip">none (cycle)</span>`;
       detail = res.winner ? 'beats every rival' : 'majorities cycle';
     }else if(key==='plurality'){ winHTML=chip(res.winner,true);
       detail=ev.candidates.map(c=>c+':'+res.counts[c]).join('  ');
@@ -269,8 +271,8 @@ function renderResults(){
   const b=$('banner'), cyc=ev.results.condorcet.cycle, n=ev.distinctWinners;
   if(cyc){
     const others=[...new Set([ev.results.plurality.winner,ev.results.borda.winner,ev.results.irv.winner])];
-    const agree=others.length===1?` — plurality, Borda & IRV all pick ${others[0]}`:'';
-    b.innerHTML=`<div class="banner dis">⚠ no Condorcet winner — the majority cycles${agree}</div>`;
+    const agree=others.length===1?`; plurality, Borda & IRV all pick ${others[0]}`:'';
+    b.innerHTML=`<div class="banner dis">⚠ no Condorcet winner: the majority cycles${agree}</div>`;
   } else if(n===1) b.innerHTML=`<div class="banner agree">✓ all four rules agree</div>`;
   else b.innerHTML=`<div class="banner dis">⚠ ${n} different winners from the same ballots</div>`;
 }
@@ -320,7 +322,7 @@ function drawGraph(){
   });
   ctx.textAlign='left';ctx.textBaseline='alphabetic';
   ctx.fillStyle=cycle?C('--bad'):C('--good');ctx.font='12px '+C('--mono');
-  ctx.fillText(cycle?'cycle — no Condorcet winner':(cw?('Condorcet winner: '+cw):''),14,h-12);
+  ctx.fillText(cycle?'cycle: no Condorcet winner':(cw?('Condorcet winner: '+cw):''),14,h-12);
 }
 function drawArrow(ctx,p,q,nr,col,label){
   const dx=q.x-p.x,dy=q.y-p.y,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L;
@@ -381,7 +383,7 @@ profile=[(c,r) for c,r in zip([${c0},${c1},${c2}], LIVE_RANKINGS) if c>0]
 json.dumps(evaluate(profile, LIVE_CANDIDATES))
 `);
     ev=JSON.parse(js);
-    $('blurb').innerHTML='<b>Live.</b> Move the three sliders to rebalance the electorate and watch the winners — and the cycle — appear and vanish.';
+    $('blurb').innerHTML='<b>Live.</b> Move the three sliders to rebalance the electorate and watch the winners (and the cycle) appear and vanish.';
     render();
   }catch(e){ console.error(e); }
   finally{ btn.disabled=false; }
@@ -410,7 +412,7 @@ function setMode(m){
   $('liveCtls').style.opacity = m==='live'?'1':'0.5';
   $('runLive').style.display=m==='live'?'inline-block':'none';
   if(m==='play'){ showScenario(+$('scenario').value); }
-  else if(pyReady){ runLive(); }            // already loaded — render the live profile now
+  else if(pyReady){ runLive(); }            // already loaded: render the live profile now
   else { clearLive(); $('blurb').innerHTML='<b>Live · Python.</b> A three-candidate (A, B, C) sandbox for the Condorcet cycle. Press <b>Run live ▶</b> to compute, then move the sliders to make the cycle appear and vanish.'; }
 }
 loadData();
@@ -420,21 +422,21 @@ const POP={
   borda:{title:'The Borda count',html:`
     <p>Every ballot awards points by rank: with m candidates, your 1st choice gets <b>m−1</b>, your
     2nd gets m−2, down to <b>0</b> for last. The highest total wins.</p>
-    <p class="muted">It rewards broad acceptability — a candidate ranked 2nd by everyone can beat one
+    <p class="muted">It rewards broad acceptability: a candidate ranked 2nd by everyone can beat one
     ranked 1st by a slim plurality but last by the rest.</p>`},
   irv:{title:'Instant-runoff (ranked-choice)',html:`
     <p>Count everyone's first choice. If no one has a majority, <b>eliminate</b> the candidate with the
-    fewest, transfer their ballots to the next choice on each, and repeat.</p>
-    <p class="muted">Used in real elections (Australia, Ireland, US cities). It resists spoilers — but
+    fewest, transfer their ballots to the next choice on each and repeat.</p>
+    <p class="muted">Used in real elections (Australia, Ireland, US cities). It resists spoilers but
     can behave non-monotonically, where gaining support costs you the win.</p>`},
   condorcet:{title:'The Condorcet method',html:`
     <p>Compare every pair head-to-head. The <b>Condorcet winner</b> is the candidate who would beat each
-    rival one-on-one by majority. Hard to argue against — when it exists.</p>
+    rival one-on-one by majority. Hard to argue against, when it exists.</p>
     <p class="muted">The catch: it often doesn't exist, because majorities can cycle.</p>`},
   paradox:{title:'The Condorcet paradox',html:`
     <p>Take 35% A&gt;B&gt;C, 33% B&gt;C&gt;A, 32% C&gt;A&gt;B. A majority prefers <b>A to B</b>, another
     prefers <b>B to C</b>, and yet another prefers <b>C to A</b>.</p>
-    <p class="muted">The pairwise graph is a loop with no source — group preference is intransitive even
+    <p class="muted">The pairwise graph is a loop with no source: group preference is intransitive even
     though every individual is perfectly rational. Condorcet, 1785.</p>`},
   pairwise:{title:'The majority graph',html:`
     <p>One node per candidate; an arrow <b>A → B</b> means more voters rank A above B than below. The
@@ -445,16 +447,16 @@ const POP={
     <p>A trailing candidate splits a bloc that would otherwise unite behind one front-runner, flipping
     the plurality result to a candidate the majority actually ranks lower.</p>
     <p class="muted">Remove the spoiler and the "wrong" winner loses. This is the central case against
-    plurality voting — and the reason ranked methods exist.</p>`},
+    plurality voting and the reason ranked methods exist.</p>`},
   arrow:{title:"Arrow's impossibility theorem",html:`
     <p>Kenneth Arrow (1951) proved that <b>no</b> ranked voting rule can simultaneously satisfy a short
-    list of reasonable fairness conditions (unanimity, no dictator, and independence of irrelevant
+    list of reasonable fairness conditions (unanimity, no dictator and independence of irrelevant
     alternatives) once there are three or more candidates.</p>
-    <p class="muted">So the disagreements here aren't fixable by a cleverer rule — some trade-off is
+    <p class="muted">So the disagreements here aren't fixable by a cleverer rule; some trade-off is
     mathematically unavoidable.</p>`},
   choice:{title:'Choosing the rule is political',html:`
     <p>When the same ballots yield four legitimate winners, <b>picking the method decides the outcome</b>
-    as surely as the votes do — and that choice is made by whoever designs the system.</p>
+    as surely as the votes do, and that choice is made by whoever designs the system.</p>
     <p class="muted">Plurality favours the largest faction; Borda the broadly liked; Condorcet the
     consensus beater; IRV the one who survives elimination. None is neutral.</p>`},
 };

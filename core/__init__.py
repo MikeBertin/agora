@@ -1,4 +1,4 @@
-"""Agora negotiation engine — discrete multi-issue bilateral bargaining."""
+"""Agora negotiation engine: discrete multi-issue bilateral bargaining."""
 from .domain import Domain, UtilitySpace, Bid
 from .model import FrequencyModel
 from .agents import make_agent, AGENT_KINDS

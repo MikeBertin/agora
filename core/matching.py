@@ -11,7 +11,7 @@ every receiver *tentatively* holds the best offers up to its quota and rejects
 the rest, bumping anyone it was holding for a better arrival; repeat until no
 proposer has anywhere left to propose. The result (Gale & Shapley 1962) is
 stable and **proposer-optimal**: each proposer gets the best partner it has in
-ANY stable matching, and each receiver its worst — so which side proposes
+ANY stable matching, and each receiver its worst, so which side proposes
 decides who the market favours. Truth-telling is a dominant strategy for the
 proposing side only; a receiver can sometimes gain by shortening its list.
 
@@ -215,7 +215,7 @@ def best_misreport(agent: str, side: str, a: dict, b: dict) -> dict:
 
     Tries every ordered sublist of the agent's true preferences, reruns the
     market, and scores the agent's partner by its TRUE list. ``gain`` is True
-    when some lie beats honesty — never for a proposer (strategy-proofness),
+    when some lie beats honesty: never for a proposer (strategy-proofness),
     sometimes for a receiver. Assumes the agent has capacity 1.
     """
     side_d = a if side == "a" else b

@@ -1,6 +1,6 @@
 """Scoring a flow, and comparing the three solvers head to head.
 
-``evaluate`` scores any flow — whoever produced it — on the one network, so the
+``evaluate`` scores any flow (whoever produced it) on the one network, so the
 central optimum, the market and the greedy baseline are judged on identical
 terms. ``compare`` runs all three and reports the efficiency gap: how close a
 decentralised market and a myopic baseline get to the planner's optimum.
@@ -58,7 +58,7 @@ def compare(net: Network) -> dict:
     elastic = not net.all_mandatory()
     opt = solve_optimum(net)
     if not opt.get("feasible", True):
-        # mandatory demand can't be met — no optimum to compare against
+        # mandatory demand can't be met, so there is no optimum to compare against
         return {"network": net.to_dict(),
                 "objective": "welfare" if elastic else "cost",
                 "feasible": False, "methods": {"optimum": opt}}

@@ -3,7 +3,7 @@
 Each node is an autonomous agent that must pick one of k colours (read: a time
 slot, frequency, or channel). Edges are constraints: two neighbours sharing a
 colour is a *conflict* (they clash over the resource). No agent sees the whole
-graph — each only knows its own choice and its neighbours' current choices —
+graph (each only knows its own choice and its neighbours' current choices),
 yet together they must minimise the global conflict count. This is the
 multi-agent backbone of decentralised scheduling and resource allocation.
 

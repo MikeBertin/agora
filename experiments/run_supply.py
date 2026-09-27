@@ -4,7 +4,7 @@ Needs scipy (the LP optimum), so run under the project venv:
 
     .venv/bin/python experiments/run_supply.py
 
-Unlike the other demos this one is playback-only — the engine depends on scipy
+Unlike the other demos this one is playback-only: the engine depends on scipy
 and so cannot run in the browser via Pyodide, so there is no core mirror step.
 """
 from __future__ import annotations

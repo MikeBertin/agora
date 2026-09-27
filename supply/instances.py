@@ -56,7 +56,7 @@ def bottleneck() -> Network:
 def shortage() -> Network:
     """Not enough to go round: with elastic demand, *what* you serve matters.
 
-    Supply (30) is short of demand (40), and demand is elastic — each store has
+    Supply (30) is short of demand (40), and demand is elastic: each store has
     a per-unit value. The cheapest lane reaches the low-value store, so a
     cost-myopic plan fills it first and wastes scarce supply; the welfare
     optimum serves the high-value store first instead.
@@ -79,7 +79,7 @@ def myopia() -> Network:
     """Greedy's blind spot: the single cheapest lane steals needed capacity.
 
     The Hub is the only cheap way to reach the Remote store, but it is *also*
-    the single cheapest lane to the Easy store — which has a fine backup in the
+    the single cheapest lane to the Easy store, which has a fine backup in the
     Depot. A myopic dispatcher grabs that cheapest lane first, exhausts the Hub
     on the Easy store, and is left shipping to the Remote store at 9×. Planning
     ahead sends the Hub to the Remote store instead and halves the bill.
@@ -102,11 +102,11 @@ def myopia() -> Network:
 def stranded() -> Network:
     """No backup route: greedy leaves a whole store with nothing.
 
-    The Coastal DC has no lane to the Valley store — only the Junction reaches
+    The Coastal DC has no lane to the Valley store; only the Junction reaches
     it. But the Junction's cheapest lane is to the City store (which the Coastal
     DC could have covered). Greedy spends the Junction's stock on the City lane
     and the Valley gets zero: the plan is cheap per unit shipped but fails half
-    the network. Its efficiency is 0 — cost comparisons mean nothing when you
+    the network. Its efficiency is 0, since cost comparisons mean nothing when you
     don't serve the same demand.
     """
     warehouses = [
@@ -137,7 +137,7 @@ def random_network(m: int, n: int, seed: int,
     unevenly over ``m`` warehouses; each of the ``n`` stores is elastic with
     probability ``elastic_share``; lanes exist with probability ``density``,
     topped up so every mandatory store can reach enough capacity. Deeper
-    (Hall-type) infeasibility is still possible but rare — check the LP's
+    (Hall-type) infeasibility is still possible but rare, so check the LP's
     ``feasible`` flag if it matters.
     """
     rng = random.Random(seed)
@@ -180,7 +180,7 @@ SCENARIOS = [
         "id": "regions",
         "label": "Regional balance",
         "blurb": "Two regional DCs, three stores. Each DC cheaply serves its own "
-                 "side; the Midtown store sits between them and is the swing — how "
+                 "side; the Midtown store sits between them and is the swing: how "
                  "its 20 units split is what the optimiser actually decides.",
         "network": regions(),
     },
@@ -189,7 +189,7 @@ SCENARIOS = [
         "label": "Capacity bottleneck",
         "blurb": "The cheap DC can only cover 20 of the 50 units demanded, so the "
                  "rest must ship from the pricey DC at 6×. The last unit served "
-                 "costs 6 — and that marginal cost becomes the market price "
+                 "costs 6, and that marginal cost becomes the market price "
                  "everywhere, handing the cheap DC's scarce capacity a premium.",
         "network": bottleneck(),
     },
@@ -198,7 +198,7 @@ SCENARIOS = [
         "label": "Shortage & elastic demand",
         "blurb": "Only 30 units for 40 of demand. The Outlet is cheapest to reach "
                  "but its goods are worth little; the Flagship is dearer to serve "
-                 "but far more valuable. Serve the right one and welfare is high — "
+                 "but far more valuable. Serve the right one and welfare is high; "
                  "grab the nearest and you leave money on the table.",
         "network": shortage(),
     },
@@ -206,7 +206,7 @@ SCENARIOS = [
         "id": "myopia",
         "label": "Greedy's blind spot",
         "blurb": "Both stores must be served. The Hub is cheapest of all to the "
-                 "Easy store — but the Easy store has a backup and the Remote one "
+                 "Easy store, but the Easy store has a backup and the Remote one "
                  "doesn't. Grab the cheapest lane and you pay 9× to reach the "
                  "Remote store; plan ahead and the bill halves, 100 down to 50.",
         "network": myopia(),
@@ -214,7 +214,7 @@ SCENARIOS = [
     {
         "id": "stranded",
         "label": "Stranded store",
-        "blurb": "Only the Junction DC can reach the Valley store — but its "
+        "blurb": "Only the Junction DC can reach the Valley store, but its "
                  "cheapest lane goes to the City, which the Coastal DC could have "
                  "covered. Greedy burns the Junction's stock on that cheap lane "
                  "and the Valley gets nothing: half the demand unserved, "

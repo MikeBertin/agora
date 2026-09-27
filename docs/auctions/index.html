@@ -3,15 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agora — Auctions</title>
+<link rel="icon" href="../badge.svg" type="image/svg+xml">
+<title>Agora · Auctions</title>
 <meta property="og:type" content="website">
-<meta property="og:title" content="Agora — Auctions">
+<meta property="og:title" content="Agora · Auctions">
 <meta property="og:image" content="https://mikebertin.github.io/agora/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://mikebertin.github.io/agora/og.png">
-<meta name="description" content="Four classic auctions — English, Dutch, first-price and Vickrey — under independent private values: bid shading, who wins, and the revenue-equivalence theorem, all converging live. Runs the real Python engine via Pyodide.">
+<meta name="description" content="Four classic auctions (English, Dutch, first-price and Vickrey) under independent private values: bid shading, who wins and the revenue-equivalence theorem, all converging live. Runs the real Python engine via Pyodide.">
 <style>
   :root{
     --bg:#0a0a0f; --panel:#13131c; --line:#23232f; --line2:#2c2c3a;
@@ -90,6 +91,7 @@
   #pop .muted{color:var(--muted);font-size:12px}
   #pop .eq{font-family:var(--mono);background:#0e0e16;border:1px solid var(--line);border-radius:7px;
     padding:8px 10px;margin:9px 0;font-size:12.5px;text-align:center;color:#e6ebff}
+  @media (prefers-reduced-motion: reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
@@ -98,7 +100,7 @@
   <header class="hero">
     <h1>Auctions</h1>
     <p class="sub">Several bidders, each with a secret <span class="x" data-pop="ipv">private value</span>
-    for one item, compete under four classic rules. The mechanics differ wildly — yet for values drawn
+    for one item, compete under four classic rules. The mechanics differ wildly, yet for values drawn
     at random, all four raise the <b>same expected revenue</b>. Scrub through the auctions and watch the
     <span class="x" data-pop="revequiv">revenue-equivalence theorem</span> emerge.
     <b>Live</b> runs the real Python engine in your browser via Pyodide.</p>
@@ -111,7 +113,7 @@
         <p class="psub">Running-average price paid, per mechanism, as auctions accumulate. The
         <span class="x" data-pop="second">second-price</span> pair and the
         <span class="x" data-pop="shade">first-price</span> pair take different paths but converge to
-        the same line — the dashed theoretical value (n−1)/(n+1).</p>
+        the same line: the dashed theoretical value (n−1)/(n+1).</p>
         <canvas id="revCanvas" height="360"></canvas>
         <div class="legend">
           <span><i class="sw" style="background:var(--english)"></i>English</span>
@@ -156,7 +158,7 @@
       <div class="panel">
         <h3>Revenue distribution</h3>
         <p class="psub">How the winning price is spread, pooled over the auctions so far. Both pairs
-        share the same <b>mean</b> (dashed) — but first-price is
+        share the same <b>mean</b> (dashed), but first-price is
         <span class="x" data-pop="spread">tighter</span>: same revenue on average, less risk for the seller.</p>
         <canvas id="distCanvas" height="216"></canvas>
         <div class="legend">
@@ -172,26 +174,26 @@
     <div class="notice-grid">
       <div class="ncard">
         <h3>Honesty is optimal</h3>
-        <p>In <b>English</b> and <b>Vickrey</b>, bidding your exact value is a dominant strategy — you
+        <p>In <b>English</b> and <b>Vickrey</b>, bidding your exact value is a dominant strategy: you
         can't do better whatever the others do. The winner pays the runner-up's value.</p>
         <span class="x why" data-pop="dominant">Why truth-telling wins</span>
       </div>
       <div class="ncard">
         <h3>Shade your bid</h3>
         <p>In <b>first-price</b> and <b>Dutch</b>, bidding your value would earn you zero. The
-        equilibrium shades down to v·(n−1)/n — bidding less, but winning the same auctions.</p>
+        equilibrium shades down to v·(n−1)/n, bidding less, but winning the same auctions.</p>
         <span class="x why" data-pop="shade">The equilibrium bid</span>
       </div>
       <div class="ncard">
         <h3>Same revenue, every time</h3>
         <p>Four very different rules, one expected revenue. The running averages chase the same dashed
-        line — that's the revenue-equivalence theorem in action.</p>
+        line. That's the revenue-equivalence theorem in action.</p>
         <span class="x why" data-pop="revequiv">Why they coincide</span>
       </div>
       <div class="ncard">
         <h3>Competition pays</h3>
         <p>Switch to <b>Live</b> and raise the bidder count: revenue climbs toward the top value and
-        shading shrinks (b → v) — more rivals means less room to lowball.</p>
+        shading shrinks (b → v): more rivals means less room to lowball.</p>
         <span class="x why" data-pop="competition">The effect of n</span>
       </div>
     </div>
@@ -199,7 +201,7 @@
 
   <p class="sub" style="margin-top:26px;border-top:1px solid var(--line);padding-top:16px">
     Independent private values drawn uniformly on [0,1]. <b>English ≡ Vickrey</b> (pay the 2nd-highest
-    value) and <b>Dutch ≡ first-price</b> (pay the shaded top bid) are strategically equivalent pairs —
+    value) and <b>Dutch ≡ first-price</b> (pay the shaded top bid) are strategically equivalent pairs,
     which is why each pair's line sits exactly on top of the other.</p>
 </div>
 
@@ -395,7 +397,7 @@ loadPlayback();
 // ---- popovers ----
 const POP={
   ipv:{title:'Independent private values',html:`
-    <p>Each bidder has their own secret worth for the item — drawn at random, here uniformly on
+    <p>Each bidder has their own secret worth for the item, drawn at random, here uniformly on
     <b>[0, 1]</b>, and independent of everyone else's. Nobody knows the others' values.</p>
     <p class="muted">This is the standard setting in which the equivalence results below hold.</p>`},
   second:{title:'Second-price logic (English & Vickrey)',html:`
@@ -406,14 +408,14 @@ const POP={
     <p>You pay <b>what you bid</b>, so bidding your full value leaves you no profit. The symmetric
     equilibrium bids below value:</p>
     <div class="eq">b(v) = v · (n−1)/n</div>
-    <p class="muted">The <b>Dutch</b> descending clock is the same game in disguise — you "accept" exactly
-    at your planned bid — so it pays the same shaded top bid.</p>`},
+    <p class="muted">The <b>Dutch</b> descending clock is the same game in disguise (you "accept" exactly
+    at your planned bid), so it pays the same shaded top bid.</p>`},
   revequiv:{title:'The revenue-equivalence theorem',html:`
     <p>Any auction that (1) always awards the item to the <b>highest-value</b> bidder and (2) gives a
     bidder with value 0 zero expected payoff raises the <b>same expected revenue</b>.</p>
     <div class="eq">E[revenue] = (n−1)/(n+1)</div>
     <p class="muted">Second-price collects the runner-up's value; first-price collects a shaded top
-    bid. Per auction they differ — but average them and they meet. (Vickrey, 1961.)</p>`},
+    bid. Per auction they differ, but average them and they meet. (Vickrey, 1961.)</p>`},
   efficiency:{title:'Efficiency',html:`
     <p>An auction is <b>efficient</b> if the item ends up with whoever values it most. All four here
     are: truthful bidding and monotonic shading both leave the highest-value bidder winning.</p>
@@ -424,7 +426,7 @@ const POP={
     you pay (that's set by the runner-up). Over-bidding risks winning at a loss; under-bidding risks
     skipping a profitable win. Bidding your value is best <b>whatever others do</b>.</p>`},
   spread:{title:'Same mean, different spread',html:`
-    <p>Revenue equivalence is about the <b>average</b> — it says nothing about the variance. The
+    <p>Revenue equivalence is about the <b>average</b>; it says nothing about the variance. The
     <b>first-price</b> price (a shaded function of the single top value) is far less volatile than the
     <b>second-price</b> price (the gap down to the runner-up's value).</p>
     <p class="muted">So a <b>risk-averse seller</b> rationally prefers first-price / Dutch: the same
@@ -432,7 +434,7 @@ const POP={
   competition:{title:'The effect of more bidders',html:`
     <p>As n grows, the shading factor (n−1)/n → 1, so first-price bids creep up toward true value, and
     the expected revenue (n−1)/(n+1) → 1.</p>
-    <p class="muted">More competition squeezes out bidder surplus and hands it to the seller — the
+    <p class="muted">More competition squeezes out bidder surplus and hands it to the seller: the
     intuition behind wanting a "thick" market.</p>`},
 };
 (function(){

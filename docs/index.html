@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agora — Multi-Agent Systems Playground</title>
-<meta name="description" content="Automated negotiation, auctions, voting, distributed optimisation, supply allocation and matching markets — six interactive multi-agent demonstrations rebuilt from an AI MSc module, running in the browser.">
+<link rel="icon" href="badge.svg" type="image/svg+xml">
+<title>Agora · Multi-Agent Systems Playground</title>
+<meta name="description" content="Automated negotiation, auctions, voting, distributed optimisation, supply allocation and matching markets: six interactive multi-agent demonstrations rebuilt from an AI MSc module, running in the browser.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://mikebertin.github.io/agora/">
-<meta property="og:title" content="Agora — Multi-Agent Systems in the Browser">
-<meta property="og:description" content="Six interactive multi-agent demos — negotiation, auctions, voting, distributed optimisation, supply allocation & matching markets — with a real Python engine running live via Pyodide.">
+<meta property="og:title" content="Agora · Multi-Agent Systems in the Browser">
+<meta property="og:description" content="Six interactive multi-agent demos (negotiation, auctions, voting, distributed optimisation, supply allocation & matching markets) with a real Python engine running live via Pyodide.">
 <meta property="og:image" content="https://mikebertin.github.io/agora/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -54,7 +55,9 @@
   .c-supply .dot{background:var(--supply)} .c-match .dot{background:var(--match)}
   footer{margin-top:46px;color:var(--muted);font-size:13px;line-height:1.7}
   footer a{color:var(--neg);text-decoration:none}
+  footer .hub img{vertical-align:-3px}
   code{font-family:var(--mono);font-size:12.5px;background:#1a1a25;padding:1.5px 6px;border-radius:5px}
+  @media (prefers-reduced-motion: reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
@@ -63,8 +66,8 @@
     <div class="badge">Multi-Agent Systems</div>
     <h1>Agora</h1>
     <p class="lede">The Athenian <b>agora</b> was at once a marketplace, a bargaining floor and a
-    voting assembly. This one revisits the core problems of my <b>Intelligent Agents</b> MSc module —
-    automated <b>negotiation</b>, <b>auctions</b>, <b>voting</b> and distributed <b>optimisation</b> —
+    voting assembly. This one revisits the core problems of my <b>Intelligent Agents</b> MSc module
+    (automated <b>negotiation</b>, <b>auctions</b>, <b>voting</b> and distributed <b>optimisation</b>)
     as interactive demonstrations. A real Python engine computes every result, and five of the six
     demos run that engine <b>live in your browser</b> via Pyodide.</p>
   </header>
@@ -73,43 +76,44 @@
     <a class="card live c-neg" href="negotiation/">
       <h2><span class="dot"></span>Negotiation<span class="tag">Live</span></h2>
       <p>Two agents haggle over a job offer under a deadline. Watch the bidding dance against the
-      Pareto frontier, the concession curves cross, and a frequency model learn the opponent's
+      Pareto frontier, the concession curves cross and a frequency model learn the opponent's
       hidden priorities round by round.</p>
     </a>
     <a class="card live c-auc" href="auctions/">
       <h2><span class="dot"></span>Auctions<span class="tag">Live</span></h2>
-      <p>English, Dutch, first-price and Vickrey auctions — bid shading, who wins, and the
+      <p>English, Dutch, first-price and Vickrey auctions: bid shading, who wins and the
       revenue-equivalence theorem converging live, the mechanism-design route to allocating scarce supply.</p>
     </a>
     <a class="card live c-vote" href="voting/">
       <h2><span class="dot"></span>Voting<span class="tag">Live</span></h2>
-      <p>The same ballots, different rules, different winners — plurality, Borda, instant-runoff and
+      <p>The same ballots, different rules, different winners: plurality, Borda, instant-runoff and
       the Condorcet cycle that breaks them all.</p>
     </a>
     <a class="card live c-dcop" href="dcop/">
       <h2><span class="dot"></span>Distributed Optimisation<span class="tag">Live</span></h2>
-      <p>DCOP: independent agents coordinate to optimise a shared objective under constraints — the
+      <p>DCOP: independent agents coordinate to optimise a shared objective under constraints, the
       multi-agent backbone of resource-allocation and scheduling engines.</p>
     </a>
     <a class="card live c-supply" href="supply/">
       <h2><span class="dot"></span>Supply Allocation<span class="tag">Playback</span></h2>
-      <p>Logistics supply as a transportation problem, solved three ways — a central LP optimum, a
-      decentralised market where demand bids for capacity, and a greedy baseline — measured on the
+      <p>Logistics supply as a transportation problem, solved three ways (a central LP optimum, a
+      decentralised market where demand bids for capacity and a greedy baseline) and measured on the
       efficiency gap. The market reaches the optimum and rediscovers its prices by bidding.</p>
     </a>
     <a class="card live c-match" href="matching/">
       <h2><span class="dot"></span>Matching Markets<span class="tag">Live</span></h2>
-      <p>Two-sided markets with no prices at all: candidates and companies — or residents and hospitals
-      with quotas — pair off by Gale–Shapley deferred acceptance. Tentative offers, rejection cascades,
+      <p>Two-sided markets with no prices at all: candidates and companies (or residents and hospitals
+      with quotas) pair off by Gale–Shapley deferred acceptance. Tentative offers, rejection cascades,
       and a stable match no pair wants to leave; whoever proposes gets the best stable deal going.</p>
     </a>
   </div>
 
   <footer>
-    Open the demos straight from <code>index.html</code> — no build, no server.
+    Open the demos straight from <code>index.html</code>: no build, no server.
     The logic lives in a small pure-Python engine (<code>core/</code>) reused verbatim by
     the browser through Pyodide. Rebuilt from my Intelligent Agents MSc coursework.<br>
-    <a href="https://github.com/mikebertin/agora">Source on GitHub</a>
+    <a href="https://github.com/mikebertin/agora">Source on GitHub</a><br>
+    <span class="hub"><img src="badge.svg" alt="" width="13" height="16"> <a href="https://mikebertin.github.io/">More builds by Mike Bertin</a></span>
   </footer>
 </div>
 </body>
