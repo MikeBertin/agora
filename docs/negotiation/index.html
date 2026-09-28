@@ -161,9 +161,13 @@
     <div class="col-right">
       <div class="panel">
         <h3>Concession curves</h3>
-        <p class="psub">The utility each agent claims for itself, over time. A
-        <span class="x" data-pop="boulware">Boulware</span> opponent barely moves until late; the
-        lines nearing each other is what makes a deal possible.</p>
+        <p class="psub">The utility each agent claims for itself, over time.
+        <span class="opp-lead" data-opp="boulware">A <span class="x" data-pop="boulware">Boulware</span> opponent barely moves until late;</span>
+        <span class="opp-lead" data-opp="conceder" hidden>A <span class="x" data-pop="boulware">Conceder</span> gives ground early and keeps giving;</span>
+        <span class="opp-lead" data-opp="hardliner" hidden>The <span class="x" data-pop="hardliner">Hardliner</span> repeats its best bid forever, so its line never moves;</span>
+        <span class="opp-lead" data-opp="random" hidden>The Random opponent bids at random but never below 0.8 for itself;</span>
+        <span class="opp-lead" data-opp="frequency-v2" hidden>The improved v2 concedes a little more as the deadline nears;</span>
+        the lines nearing each other is what makes a deal possible.</p>
         <canvas id="concCanvas" height="230"></canvas>
         <div class="legend">
           <span><i class="sw" style="background:var(--a)"></i>A demands</span>
@@ -250,6 +254,9 @@ async function loadPlayback(){
   onTraceLoaded(); setStatus('');
 }
 function onTraceLoaded(){
+  // the concession caption describes whichever opponent is playing
+  const opp=$('agentB').value;
+  document.querySelectorAll('.opp-lead').forEach(el=>{ el.hidden = el.dataset.opp!==opp; });
   offers=trace.rounds.filter(r=>r.type==='offer'); idx=0;
   $('scrub').max=trace.rounds.length-1; $('scrub').value=0;
   renderOutcome(); seek(0);

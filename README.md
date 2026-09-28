@@ -93,7 +93,7 @@ docs/                  # static site (served by GitHub Pages from /docs)
   supply/             #   supply demo (Canvas viz, precomputed playback)
   data/               #   precomputed traces + manifests
   core/               #   copy of the engine, fetched by Pyodide
-tests/test_core.py    # engine smoke tests (75 checks)
+tests/test_core.py    # engine smoke tests (74 checks)
 tests/test_supply.py  # supply engine smoke tests (needs venv; 131 checks)
 ```
 
@@ -106,14 +106,15 @@ logistics transportation problem as a central LP, as a decentralised auction
 market and greedily, then measures the efficiency gap between them. The
 market handles lane capacities (per-lane slot pools with phantom buyers), and
 an ε-scaled sequential variant (`supply/scale.py`) reaches the same optimum on
-thousand-unit instances in milliseconds where the synchronous auction would
+thousand-unit instances in under a second where the synchronous auction would
 take minutes (`experiments/bench_supply.py` has the receipts). It is the one
 engine that needs a third-party solver (scipy), so unlike the other five it
 runs offline only, not live in the browser.
 
 ## Running it
 
-The site is static: open `docs/index.html`, or serve the folder:
+The site is static, but the pages fetch their data files, which browsers block
+from a page opened straight off disk. Serve the folder:
 
 ```sh
 cd docs && python3 -m http.server 8761
